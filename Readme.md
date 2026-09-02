@@ -7,5 +7,7 @@ Kelas : PBP F
 - Saya menggunakan Google Stitch sebagai AI (tools) yang membantu membuatkan desain (UI/UX) dari web portofolio saya seperti figma.
 2. 
 
+#Jawaban Reflektif
+
 
 
