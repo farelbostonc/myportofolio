@@ -1186,7 +1186,6 @@ a {
         font-size: 0.8rem;
     }
 
-
     /* Achievement Item */
 
     .achievement-list {
@@ -1258,5 +1257,528 @@ a {
         margin: 0;
 
         font-size: 0.66rem;
+    }
+}
+/* Experience Section */
+
+.experience {
+    padding: 3.8rem 0 6rem;
+}
+
+/*
+   Sama seperti Education:
+   dibuat lebih lebar agar sesuai desain reference.
+*/
+.experience .container {
+    width: min(100% - 4rem, 1420px);
+}
+
+
+/* Experience section title */
+
+.experience > .container > .section-title {
+    display: flex;
+    align-items: center;
+
+    gap: 0.45rem;
+
+    margin-bottom: 2rem;
+
+    color: var(--ink);
+
+    font-size: clamp(1.7rem, 2vw, 2rem);
+    font-weight: 700;
+    line-height: 1.2;
+
+    letter-spacing: -0.04em;
+}
+
+/* Bullet hitam */
+.experience > .container > .section-title .bullet {
+    color: var(--ink);
+
+    font-family: Arial, sans-serif;
+    font-size: 1.4rem;
+    line-height: 1;
+
+    margin-right: 0;
+}
+
+/* Experience main card */
+
+.experience-card {
+    width: 100%;
+
+    padding: 3.2rem 3.5rem;
+
+    background-color: rgba(255, 255, 255, 0.9);
+
+    border: 1px solid var(--line);
+    border-radius: 20px;
+
+    box-shadow:
+        0 1px 2px rgba(28, 25, 23, 0.035),
+        0 4px 12px rgba(28, 25, 23, 0.025);
+}
+
+/* timeline wrapper */
+
+.timeline {
+    position: relative;
+
+    width: 100%;
+}
+
+/*
+   Garis vertikal timeline
+*/
+.timeline::before {
+    content: "";
+
+    position: absolute;
+
+    top: 18px;
+    bottom: 18px;
+    left: 11px;
+
+    width: 2px;
+
+    background-color: var(--line);
+
+    z-index: 0;
+}
+
+
+/* timeline item */
+
+.timeline-item {
+    position: relative;
+
+    display: grid;
+
+    grid-template-columns:
+        24px
+        minmax(0, 1fr);
+
+    column-gap: 2.5rem;
+
+    padding-bottom: 2.7rem;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+/* timeline marker */
+
+.timeline-marker {
+    position: relative;
+
+    width: 22px;
+    height: 22px;
+
+    margin-top: 0.35rem;
+
+    background-color: #ffffff;
+
+    border: 3px solid var(--accent);
+    border-radius: 50%;
+
+    z-index: 2;
+}
+
+/* konten timeline */
+
+.timeline-content {
+    min-width: 0;
+}
+
+/* experience header */
+
+.exp-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 2rem;
+
+    margin-bottom: 0.45rem;
+}
+
+/*
+   Digunakan pada experience pertama
+   karena ada CURRENT badge di samping title
+*/
+.exp-title-group {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.8rem;
+}
+
+/* experience title */
+
+.exp-header h3 {
+    color: var(--ink);
+
+    font-family:
+        "Space Grotesk",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.25;
+
+    letter-spacing: -0.03em;
+}
+
+/* current badge */
+
+.badge-current {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    padding: 0.3rem 0.7rem;
+
+    color: #ffffff;
+    background-color: var(--ink);
+
+    border-radius: 6px;
+
+    font-size: 0.65rem;
+    font-weight: 700;
+
+    letter-spacing: 0.045em;
+
+    white-space: nowrap;
+}
+
+/* Experience period */
+
+.exp-period {
+    flex-shrink: 0;
+
+    padding-top: 0.15rem;
+
+    color: var(--text-muted);
+
+    font-size: 0.86rem;
+    font-weight: 500;
+
+    white-space: nowrap;
+}
+
+/* Organization */
+
+.exp-org {
+    margin-bottom: 0.7rem;
+
+    color: var(--accent-dark);
+
+    font-family:
+        "Space Grotesk",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+
+    font-size: 0.88rem;
+    font-weight: 700;
+
+    line-height: 1.4;
+
+    letter-spacing: 0.025em;
+
+    text-transform: uppercase;
+}
+
+/* Experience description */
+
+.exp-desc {
+    max-width: 1180px;
+
+    margin-bottom: 1rem;
+
+    color: var(--text-muted);
+
+    font-size: 0.96rem;
+    font-weight: 400;
+
+    line-height: 1.55;
+}
+
+/* Experience tag */
+
+.exp-tags {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.65rem;
+}
+
+/*
+   Override .tag global dari About Me.
+   Hanya berlaku di Experience.
+*/
+.experience .exp-tags .tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0.4rem 0.85rem;
+
+    color: #5f5951;
+    background-color: var(--soft-bg);
+
+    border: 1px solid var(--line);
+    border-radius: 6px;
+
+    font-size: 0.78rem;
+    font-weight: 500;
+
+    white-space: nowrap;
+
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+/* Hover experience tag */
+
+.experience .exp-tags .tag:hover {
+    color: var(--accent-dark);
+
+    background-color: #fff9f4;
+
+    border-color: rgba(214, 93, 50, 0.35);
+
+    transform: translateY(-1px);
+}
+
+
+/* Timeline Experience */
+
+.timeline-item .timeline-content {
+    transition: transform 0.2s ease;
+}
+
+.timeline-item:hover .timeline-content {
+    transform: translateX(3px);
+}
+
+.timeline-item:hover .timeline-marker {
+    background-color: var(--accent);
+
+    box-shadow:
+        0 0 0 4px rgba(214, 93, 50, 0.08);
+}
+
+/* Responsif untuk laptop kecil*/
+
+@media (max-width: 1100px) {
+
+    .experience .container {
+        width: min(100% - 3rem, 960px);
+    }
+
+    .experience-card {
+        padding: 2.6rem;
+    }
+
+    .timeline-item {
+        column-gap: 2rem;
+    }
+
+    .exp-header h3 {
+        font-size: 1.2rem;
+    }
+
+    .exp-desc {
+        font-size: 0.9rem;
+    }
+}
+
+/* Responsif untuk tablet */
+
+@media (max-width: 850px) {
+
+    .experience {
+        padding: 2.5rem 0 5rem;
+    }
+
+    .experience .container {
+        width: min(100% - 2.5rem, 720px);
+    }
+
+    .experience > .container > .section-title {
+        margin-bottom: 1.6rem;
+
+        font-size: 1.7rem;
+    }
+
+    .experience-card {
+        padding: 2rem;
+    }
+
+    .timeline-item {
+        column-gap: 1.7rem;
+        padding-bottom: 2.4rem;
+    }
+
+    .exp-header {
+        flex-direction: column;
+
+        gap: 0.3rem;
+    }
+
+    .exp-period {
+        padding-top: 0;
+
+        font-size: 0.8rem;
+    }
+}
+
+/* Responsif HP*/
+
+@media (max-width: 600px) {
+
+    .experience {
+        padding: 2rem 0 4rem;
+    }
+
+    .experience .container {
+        width: min(100% - 2rem, 520px);
+    }
+
+    .experience > .container > .section-title {
+        font-size: 1.45rem;
+
+        gap: 0.35rem;
+    }
+
+    .experience-card {
+        padding: 1.5rem 1.25rem;
+
+        border-radius: 15px;
+    }
+
+    /* Timeline */
+
+    .timeline::before {
+        left: 8px;
+
+        top: 14px;
+        bottom: 14px;
+    }
+
+    .timeline-item {
+        grid-template-columns:
+            18px
+            minmax(0, 1fr);
+
+        column-gap: 1.25rem;
+
+        padding-bottom: 2.2rem;
+    }
+
+    .timeline-marker {
+        width: 18px;
+        height: 18px;
+
+        border-width: 2px;
+
+        margin-top: 0.25rem;
+    }
+
+    /* Header */
+
+    .exp-title-group {
+        align-items: flex-start;
+
+        gap: 0.55rem;
+    }
+
+    .exp-header h3 {
+        font-size: 1rem;
+        line-height: 1.3;
+    }
+
+    .badge-current {
+        padding: 0.25rem 0.55rem;
+
+        font-size: 0.57rem;
+    }
+
+    .exp-period {
+        font-size: 0.72rem;
+    }
+
+
+    /* Content */
+
+    .exp-org {
+        margin-top: 0.15rem;
+
+        font-size: 0.72rem;
+    }
+
+    .exp-desc {
+        font-size: 0.82rem;
+        line-height: 1.55;
+    }
+
+    .experience .exp-tags .tag {
+        padding: 0.32rem 0.65rem;
+
+        border-radius: 5px;
+
+        font-size: 0.68rem;
+    }
+}
+
+
+/* Bagian responsif untuk hp yang sangat kecil */
+
+@media (max-width: 420px) {
+
+    .experience .container {
+        width: calc(100% - 1.5rem);
+    }
+
+    .experience > .container > .section-title {
+        font-size: 1.28rem;
+    }
+
+    .experience-card {
+        padding:
+            1.35rem
+            1rem;
+    }
+
+    .timeline-item {
+        column-gap: 1rem;
+    }
+
+    .exp-title-group {
+        flex-direction: column;
+    }
+
+    .badge-current {
+        align-self: flex-start;
+    }
+
+    .exp-tags {
+        gap: 0.45rem;
     }
 }
