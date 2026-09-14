@@ -31,9 +31,11 @@ TUGAS 2
 - Analisa: Hasil yang diberikan bagus dan sesuai yang dibutuhkan/diinginkan, tetapi kekurangan ai memerlukan konteks dan informasi sebanyak mungkin agar hasilnya akurat dan sesuai yang diinginkan.
 
 # Jawaban Reflektif
-1. 
-2. 
-3. 
+1. Saat pengguna membuka halaman, browser mengirim request ke Django. urls.py proyek meneruskan URL ke urls.py aplikasi. Lalu urls.py aplikasi memilih view yang sesuai. View mengambil data dari model/database, kemudian mengirim data itu ke template. Template menyusun HTML memakai data tersebut, lalu Django mengirim hasilnya kembali agar tampil di browser.
+
+2. Data sebaiknya disimpan di model karena data jadi terpisah dari tampilan. Template hanya bertugas menampilkan data. Jadi kalau ingin menambah, mengubah, atau menghapus pengalaman/pendidikan, tidak perlu mengubah HTML. Ini lebih mudah dirawat, bisa dipakai ulang di halaman lain, dan memudahkan penambahan fitur lainnya.
+
+3. makemigrations membuat file rencana perubahan database berdasarkan perubahan pada model. Kalau migrate menjalankan rencana tersebut ke database langsung.
 
 
 
