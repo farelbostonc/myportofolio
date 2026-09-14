@@ -31,6 +31,9 @@ TUGAS 2
 - Analisa: Hasil yang diberikan bagus dan sesuai yang dibutuhkan/diinginkan, tetapi kekurangan ai memerlukan konteks dan informasi sebanyak mungkin agar hasilnya akurat dan sesuai yang diinginkan.
 
 # Jawaban Reflektif
+1. 
+2. 
+3. 
 
 
 
