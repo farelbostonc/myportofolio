@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experience - {{ name }} - Portofolio</title>
+    <title>Education - {{ name }} - Portofolio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -24,29 +24,23 @@
     <main>
     <section class="experience-section" id="experience">
         <div class="container">
-            <p class="section-kicker">Perjalanan saya sejauh ini</p>
+            <p class="section-kicker">My Education</p>
             <h1>Experience</h1>
 
             <div class="experience-grid">
-                {% for experience in experience_list %}
-                    <article class="experience-card">
-                        <span class="experience-category">
-                            {{ experience.get_category_display }}
-                        </span>
-                        <h2>{{ experience.title }}</h2>
-                        <p class="experience-description">
-                            {{ experience.description }}
+                {% for education in education_list %}
+                    <article class="education-card">
+                        <h2>{{ education.title }}</h2>
+                        <p class="education-description">
+                            {{ education.description }}
                         </p>
-
-                        {% if experience.is_ongoing %}
-                            <p class="experience-status">Sedang berlangsung</p>
-                        {% else %}
-                            <p class="experience-status">Selesai</p>
-                        {% endif %}
+                        <p class="education-start_year-end_year">
+                            {{ education.start_year }} &mdash; {{ education.end_year }}
+                        </p>
                     </article>
                 {% empty %}
                     <p class="empty-state">
-                        Belum ada pengalaman yang ditambahkan.
+                        Belum ada edukasi yang ditambahkan.
                     </p>
                 {% endfor %}
             </div>

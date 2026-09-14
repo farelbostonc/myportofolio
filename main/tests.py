@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from main.models import Experience
+from main.models import Experience, Education
 
 
 class MainTest(TestCase):
@@ -11,6 +11,12 @@ class MainTest(TestCase):
             title="Asisten Lab Cyber Security and Cryptography",
             description="Membantu mengurus OS pada komputer lab serta maintanance web lab Cyber Security and Cryptography",
             category="part-time",
+        )
+        self.education = Education.objects.create(
+            title="S1 Sistem Informasi",
+            description="Fakultas Ilmu Komputer, Universitas Indonesia",
+            start_year="2025",
+            end_year="Present",
         )
 
     def test_main_url_is_accessible(self):
@@ -56,3 +62,38 @@ class MainTest(TestCase):
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, "Selesai")
         self.assertNotContains(response, "Sedang berlangsung")
+
+    # 1. URL dapat diakses dan menggunakan template yang tepat
+    def test_education_url_is_accessible(self):
+        response = self.client.get(
+            reverse("main:show_education")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "education.html")
+
+    # 2. Data Education muncul pada halaman HTML
+    def test_education_data_appears_on_page(self):
+        response = self.client.get(
+            reverse("main:show_education")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.education.title)
+        self.assertContains(response, self.education.description)
+        self.assertContains(response, self.education.start_year)
+        self.assertContains(response, self.education.end_year)
+
+    # 3. Menampilkan pesan jika belum ada data Education
+    def test_empty_education_page(self):
+        Education.objects.all().delete()
+
+        response = self.client.get(
+            reverse("main:show_education")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Belum ada edukasi yang ditambahkan."
+        )

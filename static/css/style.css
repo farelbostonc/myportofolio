@@ -1835,3 +1835,333 @@ a {
     font-size: 0.85rem;
     font-weight: 600;
 }
+/* =========================================================
+   EDUCATION PAGE
+   Django Dynamic Education List
+========================================================= */
+
+.experience-section {
+    min-height: calc(100vh - 130px);
+
+    padding: 5rem 0 6rem;
+}
+
+
+/* =========================================================
+   EDUCATION PAGE HEADING
+========================================================= */
+
+.experience-section .section-kicker {
+    margin-bottom: 0.5rem;
+
+    color: var(--accent-dark);
+
+    font-family:
+        "Space Grotesk",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.experience-section h1 {
+    margin-bottom: 2.5rem;
+
+    color: var(--ink);
+
+    font-family:
+        "Space Grotesk",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+
+    font-size: clamp(2.7rem, 5vw, 4.3rem);
+    font-weight: 700;
+    line-height: 1;
+
+    letter-spacing: -0.055em;
+}
+
+
+/* =========================================================
+   EDUCATION GRID
+========================================================= */
+
+.experience-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 1.5rem;
+}
+
+
+/* =========================================================
+   EDUCATION CARD
+========================================================= */
+
+.education-card {
+    position: relative;
+
+    min-height: 230px;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 1.8rem;
+
+    background-color: rgba(255, 255, 255, 0.88);
+
+    border: 1px solid var(--line);
+    border-radius: 16px;
+
+    box-shadow:
+        0 1px 2px rgba(28, 25, 23, 0.03),
+        0 4px 12px rgba(28, 25, 23, 0.025);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+/*
+   Accent line di bagian atas card
+*/
+.education-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 4px;
+
+    background-color: var(--accent);
+
+    transform: scaleX(0);
+    transform-origin: left;
+
+    transition: transform 0.25s ease;
+}
+
+
+/* =========================================================
+   EDUCATION CARD TITLE
+========================================================= */
+
+.education-card h2 {
+    margin-bottom: 0.75rem;
+
+    color: var(--ink);
+
+    font-family:
+        "Space Grotesk",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.3;
+
+    letter-spacing: -0.03em;
+}
+
+
+/* =========================================================
+   EDUCATION DESCRIPTION
+========================================================= */
+
+.education-description {
+    margin-bottom: 1.5rem;
+
+    color: var(--text-muted);
+
+    font-size: 0.92rem;
+    line-height: 1.6;
+
+    flex-grow: 1;
+}
+
+
+/* =========================================================
+   EDUCATION YEAR
+========================================================= */
+
+.education-start_year-end_year {
+    width: fit-content;
+
+    display: inline-flex;
+    align-items: center;
+
+    margin-top: auto;
+
+    padding: 0.4rem 0.75rem;
+
+    color: var(--accent-dark);
+    background-color: #fff7f2;
+
+    border: 1px solid rgba(214, 93, 50, 0.22);
+    border-radius: 999px;
+
+    font-family:
+        "Space Grotesk",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    letter-spacing: 0.02em;
+}
+
+
+/* =========================================================
+   EDUCATION CARD HOVER
+========================================================= */
+
+.education-card:hover {
+    transform: translateY(-4px);
+
+    border-color: rgba(214, 93, 50, 0.32);
+
+    box-shadow:
+        0 8px 24px rgba(28, 25, 23, 0.07);
+}
+
+.education-card:hover::before {
+    transform: scaleX(1);
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.empty-state {
+    grid-column: 1 / -1;
+
+    padding: 3rem 2rem;
+
+    color: var(--text-muted);
+    background-color: rgba(255, 255, 255, 0.75);
+
+    border: 1px dashed var(--line);
+    border-radius: 16px;
+
+    text-align: center;
+
+    font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   SMALL LAPTOP
+========================================================= */
+
+@media (max-width: 1000px) {
+
+    .experience-section {
+        padding: 4rem 0 5rem;
+    }
+
+    .experience-grid {
+        gap: 1.25rem;
+    }
+
+    .education-card {
+        min-height: 220px;
+
+        padding: 1.5rem;
+    }
+
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 750px) {
+
+    .experience-section {
+        padding: 3.5rem 0 4.5rem;
+    }
+
+    .experience-section h1 {
+        margin-bottom: 2rem;
+
+        font-size: clamp(2.5rem, 10vw, 3.5rem);
+    }
+
+    .experience-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .education-card {
+        min-height: auto;
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 480px) {
+
+    .experience-section {
+        padding: 2.8rem 0 4rem;
+    }
+
+    .experience-section .section-kicker {
+        font-size: 0.68rem;
+    }
+
+    .experience-section h1 {
+        margin-bottom: 1.6rem;
+
+        font-size: 2.5rem;
+    }
+
+    .experience-grid {
+        gap: 1rem;
+    }
+
+    .education-card {
+        padding: 1.25rem;
+
+        border-radius: 13px;
+    }
+
+    .education-card h2 {
+        font-size: 1.1rem;
+    }
+
+    .education-description {
+        margin-bottom: 1.2rem;
+
+        font-size: 0.84rem;
+    }
+
+    .education-start_year-end_year {
+        padding: 0.34rem 0.65rem;
+
+        font-size: 0.68rem;
+    }
+
+}
