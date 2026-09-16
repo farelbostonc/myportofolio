@@ -1,10 +1,11 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from main.models import Experience, Education
+from main.models import Education, Experience, Project
 
 
+@override_settings(PORTFOLIO_EDIT_KEYS=["ZmFyZWw=", "Ym9zdG9u"])
 class MainTest(TestCase):
     def setUp(self):
         self.experience = Experience.objects.create(
@@ -17,6 +18,11 @@ class MainTest(TestCase):
             description="Fakultas Ilmu Komputer, Universitas Indonesia",
             start_year="2025",
             end_year="Present",
+        )
+        self.project = Project.objects.create(
+            title="Portfolio",
+            description="Website portfolio pribadi",
+            tech_stack="Django",
         )
 
     def test_main_url_is_accessible(self):
@@ -97,3 +103,100 @@ class MainTest(TestCase):
             response,
             "Belum ada edukasi yang ditambahkan."
         )
+
+    def test_create_experience_rejects_invalid_edit_key(self):
+        response = self.client.post(
+            reverse("main:create_experience"),
+            {
+                "title": "Security Intern",
+                "description": "Belajar keamanan aplikasi.",
+                "category": "internship",
+                "thumbnail": "",
+                "ended_at": "",
+                "access_key": "wrong-key",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kode rahasia admin tidak valid.")
+        self.assertFalse(Experience.objects.filter(title="Security Intern").exists())
+
+    def test_create_experience_accepts_first_edit_key(self):
+        response = self.client.post(
+            reverse("main:create_experience"),
+            {
+                "title": "Security Intern",
+                "description": "Belajar keamanan aplikasi.",
+                "category": "internship",
+                "thumbnail": "",
+                "ended_at": "",
+                "access_key": "ZmFyZWw=",
+            },
+        )
+
+        self.assertRedirects(response, reverse("main:show_experience"))
+        self.assertTrue(Experience.objects.filter(title="Security Intern").exists())
+
+    def test_create_education_accepts_second_edit_key(self):
+        response = self.client.post(
+            reverse("main:create_education"),
+            {
+                "title": "Security Course",
+                "description": "Kursus keamanan siber.",
+                "start_year": "2026",
+                "end_year": "2026",
+                "access_key": "Ym9zdG9u",
+            },
+        )
+
+        self.assertRedirects(response, reverse("main:show_education"))
+        self.assertTrue(Education.objects.filter(title="Security Course").exists())
+
+    def test_project_create_rejects_invalid_edit_key(self):
+        response = self.client.post(
+            reverse("main:create_project"),
+            {
+                "title": "Unauthorized Project",
+                "description": "Tidak boleh tersimpan.",
+                "tech_stack": "Django",
+                "project_url": "",
+                "project_image_url": "",
+                "access_key": "wrong-key",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Project.objects.filter(title="Unauthorized Project").exists())
+
+    def test_project_delete_requires_valid_edit_key(self):
+        delete_url = reverse("main:delete_project", args=[self.project.id])
+
+        response = self.client.post(delete_url, {"access_key": "wrong-key"})
+        self.assertRedirects(response, reverse("main:show_projects"))
+        self.assertTrue(Project.objects.filter(pk=self.project.id).exists())
+
+        response = self.client.post(delete_url, {"access_key": "ZmFyZWw="})
+        self.assertRedirects(response, reverse("main:show_projects"))
+        self.assertFalse(Project.objects.filter(pk=self.project.id).exists())
+
+    def test_experience_delete_requires_valid_admin_code(self):
+        delete_url = reverse("main:delete_experience", args=[self.experience.id])
+
+        response = self.client.post(delete_url, {"access_key": "wrong-key"})
+        self.assertRedirects(response, reverse("main:show_experience"))
+        self.assertTrue(Experience.objects.filter(pk=self.experience.id).exists())
+
+        response = self.client.post(delete_url, {"access_key": "Ym9zdG9u"})
+        self.assertRedirects(response, reverse("main:show_experience"))
+        self.assertFalse(Experience.objects.filter(pk=self.experience.id).exists())
+
+    def test_education_delete_requires_valid_admin_code(self):
+        delete_url = reverse("main:delete_education", args=[self.education.id])
+
+        response = self.client.post(delete_url, {"access_key": "wrong-key"})
+        self.assertRedirects(response, reverse("main:show_education"))
+        self.assertTrue(Education.objects.filter(pk=self.education.id).exists())
+
+        response = self.client.post(delete_url, {"access_key": "ZmFyZWw="})
+        self.assertRedirects(response, reverse("main:show_education"))
+        self.assertFalse(Education.objects.filter(pk=self.education.id).exists())

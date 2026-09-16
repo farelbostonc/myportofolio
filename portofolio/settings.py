@@ -6,6 +6,11 @@ load_dotenv()
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
+PORTFOLIO_EDIT_KEYS = [
+    key.strip()
+    for key in os.getenv("PORTFOLIO_EDIT_KEYS", "").split(",")
+    if key.strip()
+]
 
 
 """
@@ -155,4 +160,7 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
-
+# gunakan https:// untuk trailing urlnya
+CSRF_TRUSTED_ORIGINS = [
+    "https://farel-boston-myportofolio.pws.cs.ui.ac.id"
+]

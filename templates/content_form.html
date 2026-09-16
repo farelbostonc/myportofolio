@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block meta %}
+    <title>{{ page_title }} - {{ name }}</title>
+{% endblock meta %}
+{% block content %}
+    <main>
+        <section class="experience-section">
+            <div class="container">
+                <h1>{{ heading }}</h1>
+                <form method="post" class="project-form">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <p class="form-help">{{ field.help_text }}</p>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <p class="form-error">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="button">{{ submit_label }}</button>
+                    <a href="{% url cancel_url_name %}" class="button button-secondary">Batal</a>
+                </form>
+            </div>
+        </section>
+    </main>
+{% endblock content %}

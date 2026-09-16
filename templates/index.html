@@ -1,26 +1,12 @@
+{% extends 'base.html' %}
+{%load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block meta %}
     <title>{{ name }} - Portofolio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
+{% endblock meta %}
 <body>
-    <header class="site-header">
-        <div class="container">
-            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-            <nav>
-                <a href="{% url 'main:show_main' %}">Profile</a>
-                <a href="{% url 'main:show_experience' %}">Experience</a>
-                <a href="{% url 'main:show_education' %}">Education</a>
-            </nav>
-        </div>
-    </header>
-
+    {% block content %}
     <main>
         <!-- Bagian Profile -->
         <section class="hero" id="profile">
@@ -79,155 +65,7 @@
                 </div>
             </div>
         </section>
-
-        <!-- Bagian Education & Achievements -->
-        <section class="education" id="education">
-            <div class="container">
-                <h2 class="section-title">
-                    <span class="bullet">&bull;</span> Education &amp; Achievements
-                </h2>
-
-                <div class="education-grid">
-                    <!-- Bagian Kiri (Formal Education) -->
-                    <div class="edu-card">
-                        <div class="card-header">
-                            <h3><span class="bullet">&bull;</span> FORMAL EDUCATION</h3>
-                            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-                        </div>
-
-                        <div class="edu-item">
-                            <div class="edu-item-header">
-                                <span class="edu-period">2025 &mdash; PRESENT : UNDERGRADUATE</span>
-                                <span class="status-badge">ACTIVE STUDENT</span>
-                            </div>
-                            <h4>S1 Sistem Informasi (Information Systems Undergraduate)</h4>
-                            <p class="institution">Fakultas Ilmu Komputer, Universitas Indonesia (Fasilkom UI)</p>
-                            <p class="focus"><strong>Focus:</strong> Information System, Cyber Security &amp; Cryptography, Business Development, and Business Strategy</p>
-                        </div>
-
-                        <div class="edu-item">
-                            <div class="edu-item-header">
-                                <span class="edu-period">2021 &mdash; 2024 : HIGH SCHOOL</span>
-                            </div>
-                            <h4>Mathematics &amp; Natural Sciences Focus</h4>
-                            <p class="institution">SMA Negeri 5 Bogor</p>
-                        </div>
-                    </div>
-
-                    <!-- Bagian Kanan (Achievements) -->
-                    <div class="achievements-card">
-                        <div class="card-header">
-                            <h3><span class="bullet">&bull;</span> ACHIEVEMENTS</h3>
-                            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                        </div>
-
-                        <ul class="achievement-list">
-                            <li class="achievement-item">
-                                <span class="num">01</span>
-                                <span class="title">Finalist Wreck&ndash;IT CTF General 7.0</span>
-                                <span class="year">2026</span>
-                            </li>
-                            <li class="achievement-item">
-                                <span class="num">02</span>
-                                <span class="title">Top 10 Honorable Mention OpenArena Zero Day CTF</span>
-                                <span class="year">2026</span>
-                            </li>
-                            <li class="achievement-item">
-                                <span class="num">03</span>
-                                <span class="title">Finalist CTF FindIT UGM</span>
-                                <span class="year">2025</span>
-                            </li>
-                            <li class="achievement-item">
-                                <span class="num">04</span>
-                                <span class="title">Top 10 Finalist Swiss Innovation Challenge Asia</span>
-                                <span class="year">2025</span>
-                            </li>
-                            <li class="achievement-item">
-                                <span class="num">05</span>
-                                <span class="title">Finalist International Student Summit</span>
-                                <span class="year">2025</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Bagian Experience -->
-        <section class="experience" id="experience">
-            <div class="container">
-                <h2 class="section-title">
-                    <span class="bullet">&bull;</span> Experience
-                </h2>
-
-                <div class="experience-card">
-                    <div class="timeline">
-                        <!-- Bagian Experience 1 -->
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <div class="exp-header">
-                                    <div class="exp-title-group">
-                                        <h3>Cyber Security &amp; Cryptography Laboratory Assistant</h3>
-                                        <span class="badge-current">CURRENT</span>
-                                    </div>
-                                    <span class="exp-period">2026 &mdash; PRESENT</span>
-                                </div>
-                                <p class="exp-org">FAKULTAS ILMU KOMPUTER, UNIVERSITAS INDONESIA</p>
-                                <p class="exp-desc">Helping all the labs need from setting and manage operation systems until helping developb website lab.</p>
-                                <div class="exp-tags">
-                                    <span class="tag">Lab Assistant</span>
-                                    <span class="tag">Operation System</span>
-                                    <span class="tag">Web Development</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bagian Experience 2 -->
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <div class="exp-header">
-                                    <h3>Project Intern</h3>
-                                    <span class="exp-period">2025-2026</span>
-                                </div>
-                                <p class="exp-org">KING EXPERT</p>
-                                <p class="exp-desc">Coordinator of academic &amp; technology division at King Expert Science Competition 2026 and helping front end development for King Expert Science Competition website</p>
-                                <div class="exp-tags">
-                                    <span class="tag">Project Manager</span>
-                                    <span class="tag">Academic &amp; Technology Division</span>
-                                    <span class="tag">Web Development</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bagian Experience 3 -->
-                        <div class="timeline-item">
-                            <div class="timeline-marker"></div>
-                            <div class="timeline-content">
-                                <div class="exp-header">
-                                    <h3>Business Development Intern</h3>
-                                    <span class="exp-period">2025</span>
-                                </div>
-                                <p class="exp-org">ECONELLA (PT. ECO ENERGI NUSANTARA)</p>
-                                <p class="exp-desc">Evaluated market feasibility and strategic business initiatives for new opportunities. Represented Econella in national and international competition. Achieving Finalist at the Swiss Innovation Challenge Asia 2025 while collaborating with internal teams to refine business models and value propositions.</p>
-                                <div class="exp-tags">
-                                    <span class="tag">Business Developement</span>
-                                    <span class="tag">Business Strategy</span>
-                                    <span class="tag">Pitching</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
-
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
-        </div>
-    </footer>
+    {% endblock content %}
 </body>
 </html>

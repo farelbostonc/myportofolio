@@ -1,0 +1,56 @@
+<p class="experience-status">
+    <button type="button"
+            class="button button-danger"
+            popovertarget="delete-{{ item_type|lower }}-{{ item.id }}"
+            aria-label="Hapus {{ item.title }}"
+            title="Hapus {{ item_type }}">
+        Hapus {{ item_type }}
+    </button>
+</p>
+<div id="delete-{{ item_type|lower }}-{{ item.id }}"
+     class="project-delete-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="delete-{{ item_type|lower }}-title-{{ item.id }}">
+    <button type="button"
+            class="project-delete-modal__backdrop"
+            popovertarget="delete-{{ item_type|lower }}-{{ item.id }}"
+            popovertargetaction="hide"
+            aria-label="Tutup konfirmasi hapus"></button>
+    <div class="project-delete-modal__content">
+        <button type="button"
+                class="project-delete-modal__close"
+                popovertarget="delete-{{ item_type|lower }}-{{ item.id }}"
+                popovertargetaction="hide"
+                aria-label="Tutup konfirmasi hapus">×</button>
+        <h2 id="delete-{{ item_type|lower }}-title-{{ item.id }}">
+            Hapus {{ item_type }}?
+        </h2>
+        <p>
+            Apakah Anda yakin ingin menghapus
+            <strong>{{ item.title }}</strong>?
+        </p>
+        <div class="project-delete-modal__actions">
+            <button type="button"
+                    class="button button-secondary"
+                    popovertarget="delete-{{ item_type|lower }}-{{ item.id }}"
+                    popovertargetaction="hide">Batal</button>
+            <form method="post" action="{% url delete_url_name item.id %}">
+                {% csrf_token %}
+                <label class="edit-key-label"
+                       for="delete-key-{{ item_type|lower }}-{{ item.id }}">
+                    Kode Rahasia Admin
+                </label>
+                <input id="delete-key-{{ item_type|lower }}-{{ item.id }}"
+                       class="edit-key-input"
+                       type="password"
+                       name="access_key"
+                       placeholder="Masukkan kode rahasia admin"
+                       autocomplete="current-password"
+                       required>
+                <button type="submit" class="button button-danger">Ya, Hapus</button>
+            </form>
+        </div>
+    </div>
+</div>
