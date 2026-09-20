@@ -12,6 +12,7 @@ from main.views import (
     show_experience,
     show_main,
     show_projects,
+    edit_project,
 )
 
 app_name = "main"
@@ -40,4 +41,9 @@ urlpatterns = [
         delete_project,
         name="delete_project",
     ),
+    path(
+        "projects/<uuid:project_id>/edit/",
+        edit_project,
+        name="edit_project",
+    ), 
 ]

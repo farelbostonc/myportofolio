@@ -37,6 +37,17 @@ TUGAS 2
 
 3. makemigrations membuat file rencana perubahan database berdasarkan perubahan pada model. Kalau migrate menjalankan rencana tersebut ke database langsung.
 
+TUGAS 3 
+# AI Disclosure
+1. ChatGpt Web (Model 5.6 Sol)
+- Saya menggunakan chatgpt sebagai asisten yang membantu ketika ada bingung atau buntu, yaitu bagian Update data menggunakan form dan Halaman/form update data.
+- Link chat AI : https://chatgpt.com/share/6a9ed064-b944-83ec-94a9-4222fa6a3986  (Masih sama pakai chat session yang sama)
+- Strategi prompting dan penggunaaan yang saya gunakan adalah memberikan konteks dan setiap bagian terkait agar dapat sesuai dan terintegrasi (tersambung) dengan baik hasilnya sesuai yang diinginkan.
+- Analisa: AI sangat membantu
+
+# Jawaban Reflektif 
+
+
 
 
 

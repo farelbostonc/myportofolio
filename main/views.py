@@ -122,6 +122,46 @@ def create_project(request):
     }
     return render(request, "projects_form.html", context)
 
+def edit_project(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+
+    form = ProjectForm(
+        request.POST or None,
+        instance=project,
+    )
+
+    if request.method == "POST":
+        if not edit_key_is_valid(request.POST.get("access_key")):
+            messages.error(
+                request,
+                "Project tidak diperbarui: kode rahasia admin tidak valid.",
+            )
+
+        elif form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                "Project berhasil diperbarui!",
+            )
+            return redirect("main:show_projects")
+
+    context = {
+        "name": "Farel Boston Corinthians Nadeak",
+        "form": form,
+        "project": project,
+        "page_title": "Edit Project",
+        "heading": "Edit Project",
+        "submit_label": "Simpan Perubahan",
+        "cancel_url_name": "main:show_projects",
+        "is_edit": True,
+    }
+
+    return render(
+        request,
+        "projects_form.html",
+        context,
+    )
+
 def show_projects(request):
     json_response = get_projects_json(request)
     projects = serializers.deserialize(
