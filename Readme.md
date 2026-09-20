@@ -43,9 +43,14 @@ TUGAS 3
 - Saya menggunakan chatgpt sebagai asisten yang membantu ketika ada bingung atau buntu, yaitu bagian Update data menggunakan form dan Halaman/form update data.
 - Link chat AI : https://chatgpt.com/share/6a9ed064-b944-83ec-94a9-4222fa6a3986  (Masih sama pakai chat session yang sama)
 - Strategi prompting dan penggunaaan yang saya gunakan adalah memberikan konteks dan setiap bagian terkait agar dapat sesuai dan terintegrasi (tersambung) dengan baik hasilnya sesuai yang diinginkan.
-- Analisa: AI sangat membantu
+- Analisa: AI sangat membantu dalam menjawab kebuntuan tapi dia tidak dapat ngebantu detail sampe ke bagian yang lain karena terdapat beberapa bagian yang jadi ga tepat sehingga perlu debugging dan perbaikan sendiri secara manual termasuk dalam integrasinya.
 
-# Jawaban Reflektif 
+# Jawaban Reflektif
+1. ModelForm digunakan karena Django dapat membuat form berdasarkan field yang sudah ada pada model. Jadi ga perlu menulis input HTML dan validasinya satu per satu. Selain lebih cepat, penggunaan ModelForm juga membuat form tetap konsisten dengan struktur database dan memudahkan proses penyimpanan data menggunakan form.save(). Sementara itu, {% csrf_token %} wajib ditambahkan pada form dengan method POST untuk melindungi aplikasi dari serangan CSRF, yaitu ketika pihak lain mencoba mengirim request palsu atas nama pengguna. Token tersebut membantu Django memastikan request benar-benar berasal dari form pada aplikasi kita.
+
+2. JSON lebih disukai karena formatnya lebih ringkas, sederhana, dan mudah diproses oleh JavaScript. Struktur JSON juga mirip dengan object pada JavaScript, sehingga data dapat langsung digunakan pada web terbaru tanpa banyak proses tambahan.
+
+3. Saat view get_projects_json dipanggil, Django ngambil seluruh data Project dari database menggunakan query seperti Project.objects.all(). Data tersebut masih berbentuk QuerySet dan object model Django, sehingga belum bisa langsung dikirim sebagai response web. Karena itu, data perlu diserialization menggunakan serializers.serialize("json", projects) agar diubah menjadi format JSON. Setelah itu, JSON dikembalikan melalui HttpResponse dengan content type application/json, sehingga browser atau aplikasi lain dapat menerima dan membaca data portofolio tersebut.
 
 
 
