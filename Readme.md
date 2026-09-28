@@ -52,6 +52,23 @@ TUGAS 3
 
 3. Saat view get_projects_json dipanggil, Django ngambil seluruh data Project dari database menggunakan query seperti Project.objects.all(). Data tersebut masih berbentuk QuerySet dan object model Django, sehingga belum bisa langsung dikirim sebagai response web. Karena itu, data perlu diserialization menggunakan serializers.serialize("json", projects) agar diubah menjadi format JSON. Setelah itu, JSON dikembalikan melalui HttpResponse dengan content type application/json, sehingga browser atau aplikasi lain dapat menerima dan membaca data portofolio tersebut.
 
+TUGAS 4
+# AI Disclosure
+1. ChatGpt Web (Model 5.6 Sol)
+- Saya menggunakan chatgpt sebagai asisten yang membantu ketika ada bingung atau buntu, yaitu menjelaskan dan panduan awal bagaimana pengerjaan tugas 4.
+- Link chat AI : https://chatgpt.com/share/6a9ed064-b944-83ec-94a9-4222fa6a3986  (Masih sama pakai chat session yang sama)
+- Strategi prompting dan penggunaaan yang saya gunakan adalah memberikan konteks berupa tabel ceklist minimal yang perlu saya penuhi, lalu saya minta panduan dan penjelasan berdasarkan projek saya untuk memenuhi cek list yang ada (konteks projek sebgaian besar tersimpan karena dari awal menggunakan sesi chat yang sama)
+- Analisa: AI sangat membantu dalam menjawab dan menjelaskan secara keseluruhan yang perlu saya lakukan dalam implementasi tugas 4 secara detail dan jelas memenuhi semua kebingungan dan yang saya butuhkan untuk mengerjakan implementasi tugasnya.
+
+# Hasil
+Tugas 4: menambahkan registrasi, login, logout, cookie last_logi, hak akses empat peran, serta fitur star pada proyek.
+
+# Hak akses Tugas 4
+Pengunjung dapat membaca halaman dan API publik, tetapi diarahkan ke login saat mencoba aksi yang memerlukan akun. Pengguna biasa dapat memberi atau membatalkan satu star pada setiap proyek. Editor dapat mengedit proyek, tetapi tidak dapat membuat atau menghapus data. Superuser dapat membuat, mengedit, dan menghapus data portofolio. Hak akses diperiksa di view, tombol aksi pada template juga ditampilkan sesuai peran.
+
+Peran Editor menggunakan Django Group bernama Editor. Grup dan anggota Editor ditetapkan melalui Django Admin di admin. Star disimpan melalui relasi ManyToMany antara Project dan User serta diubah hanya melalui POST dengan CSRF token. Endpoint /api/projects/ tetap tersedia dengan field proyek yang bersifat publik.
+
+
 
 
 
