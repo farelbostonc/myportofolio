@@ -6,10 +6,29 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required 
 from django.core.exceptions import PermissionDenied        
+from django.db.models import Count
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
-from main.forms import EducationForm, ExperienceForm, ProjectForm, edit_key_is_valid
+from main.forms import EducationForm, ExperienceForm, ProjectForm
 from main.models import Education, Experience, Project
 import datetime
+from functools import wraps
+
+def role_required(*, owner_only=False):
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required(login_url="/login/")
+        def wrapped(request, *args, **kwargs):
+            is_editor = request.user.groups.filter(name="Editor").exists()
+            allowed = request.user.is_superuser or (
+                not owner_only and is_editor
+            )
+            if not allowed:
+                raise PermissionDenied
+            return view_func(request, *args, **kwargs)
+        return wrapped
+    return decorator
 
 
 def show_main(request):
@@ -34,7 +53,7 @@ def show_experience(request):
     }
     return render(request, "experience.html", context)
 
-@login_required(login_url="/login/") 
+@role_required(owner_only=True)
 def create_experience(request):
     form = ExperienceForm(request.POST or None)
 
@@ -53,21 +72,12 @@ def create_experience(request):
     }
     return render(request, "content_form.html", context)
 
-@login_required(login_url="/login/") 
+@role_required(owner_only=True)
+@require_POST
 def delete_experience(request, experience_id):
     experience = get_object_or_404(Experience, pk=experience_id)
-
-    if request.method == "POST" and edit_key_is_valid(request.POST.get("access_key")):
-        experience.delete()
-        messages.success(request, "Experience berhasil dihapus!")
-        return redirect("main:show_experience")
-
-    if request.method == "POST":
-        messages.error(
-            request,
-            "Experience tidak dihapus: kode rahasia admin tidak valid.",
-        )
-
+    experience.delete()
+    messages.success(request, "Experience berhasil dihapus!")
     return redirect("main:show_experience")
 
 
@@ -78,7 +88,7 @@ def show_education(request):
     }
     return render(request, "education.html", context)
 
-@login_required(login_url="/login/") 
+@role_required(owner_only=True)
 def create_education(request):
     form = EducationForm(request.POST or None)
 
@@ -97,24 +107,15 @@ def create_education(request):
     }
     return render(request, "content_form.html", context)
 
-@login_required(login_url="/login/") 
+@role_required(owner_only=True)
+@require_POST
 def delete_education(request, education_id):
     education = get_object_or_404(Education, pk=education_id)
-
-    if request.method == "POST" and edit_key_is_valid(request.POST.get("access_key")):
-        education.delete()
-        messages.success(request, "Education berhasil dihapus!")
-        return redirect("main:show_education")
-
-    if request.method == "POST":
-        messages.error(
-            request,
-            "Education tidak dihapus: kode rahasia admin tidak valid.",
-        )
-
+    education.delete()
+    messages.success(request, "Education berhasil dihapus!")
     return redirect("main:show_education")
 
-@login_required(login_url="/login/") 
+@role_required(owner_only=True)
 def create_project(request):
     form = ProjectForm(request.POST or None)
 
@@ -129,28 +130,15 @@ def create_project(request):
     }
     return render(request, "projects_form.html", context)
 
+@role_required()
 def edit_project(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
+    form = ProjectForm(request.POST or None, instance=project)
 
-    form = ProjectForm(
-        request.POST or None,
-        instance=project,
-    )
-
-    if request.method == "POST":
-        if not edit_key_is_valid(request.POST.get("access_key")):
-            messages.error(
-                request,
-                "Project tidak diperbarui: kode rahasia admin tidak valid.",
-            )
-
-        elif form.is_valid():
-            form.save()
-            messages.success(
-                request,
-                "Project berhasil diperbarui!",
-            )
-            return redirect("main:show_projects")
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Project berhasil diperbarui!")
+        return redirect("main:show_projects")
 
     context = {
         "name": "Farel Boston Corinthians Nadeak",
@@ -162,12 +150,7 @@ def edit_project(request, project_id):
         "cancel_url_name": "main:show_projects",
         "is_edit": True,
     }
-
-    return render(
-        request,
-        "projects_form.html",
-        context,
-    )
+    return render(request, "projects_form.html", context)
 
 def show_projects(request):
     json_response = get_projects_json(request)
@@ -196,21 +179,12 @@ def get_projects_json(request):
     "json", projects, use_natural_foreign_keys=True)
     return HttpResponse(projects_json, content_type="application/json")
 
-@login_required(login_url="/login/") 
+@role_required(owner_only=True)
+@require_POST
 def delete_project(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
-
-    if request.method == "POST" and edit_key_is_valid(request.POST.get("access_key")):
-        project.delete()
-        messages.success(request, "Project berhasil dihapus!")
-        return redirect("main:show_projects")
-
-    if request.method == "POST":
-        messages.error(
-            request,
-            "Project tidak dihapus: kode rahasia admin tidak valid.",
-        )
-
+    project.delete()
+    messages.success(request, "Project berhasil dihapus!")
     return redirect("main:show_projects")
 
 def register(request):

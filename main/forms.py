@@ -1,46 +1,8 @@
-import hmac
-
-from django import forms
-from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.forms import DateTimeInput, ModelForm, PasswordInput, TextInput, Textarea, URLInput
+from django.forms import DateTimeInput, ModelForm, TextInput, Textarea, URLInput
 
 from main.models import Education, Experience, Project
 
-
-def edit_key_is_valid(submitted_key):
-    configured_keys = settings.PORTFOLIO_EDIT_KEYS
-    if not configured_keys or not submitted_key:
-        return False
-    return any(
-        hmac.compare_digest(str(submitted_key), str(configured_key))
-        for configured_key in configured_keys
-    )
-
-
-class ProtectedModelForm(ModelForm):
-    access_key = forms.CharField(
-        label="Kode Rahasia Admin",
-        strip=False,
-        widget=PasswordInput(
-            attrs={
-                "placeholder": "Masukkan kode rahasia admin",
-                "autocomplete": "current-password",
-            }
-        ),
-        help_text="Kode rahasia admin diperlukan untuk menyimpan perubahan.",
-    )
-
-    def clean_access_key(self):
-        access_key = self.cleaned_data["access_key"]
-        if not settings.PORTFOLIO_EDIT_KEYS:
-            raise ValidationError("Kode rahasia admin belum dikonfigurasi di server.")
-        if not edit_key_is_valid(access_key):
-            raise ValidationError("Kode rahasia admin tidak valid.")
-        return access_key
-
-
-class ProjectForm(ProtectedModelForm):
+class ProjectForm(ModelForm):
     class Meta:
         model = Project
         fields = [
@@ -90,7 +52,7 @@ class ProjectForm(ProtectedModelForm):
         }
 
 
-class ExperienceForm(ProtectedModelForm):
+class ExperienceForm(ModelForm):
     class Meta:
         model = Experience
         fields = [
@@ -120,7 +82,7 @@ class ExperienceForm(ProtectedModelForm):
         }
 
 
-class EducationForm(ProtectedModelForm):
+class EducationForm(ModelForm):
     class Meta:
         model = Education
         fields = ["title", "description", "start_year", "end_year"]
