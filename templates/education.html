@@ -9,11 +9,13 @@
                 <p class="section-kicker">My Education</p>
                 <div class="project-header">
                     <h1>Education</h1>
+                    {% if user.is_superuser %}
                     <a href="{% url 'main:create_education' %}"
-                       class="button project-add-button">
+                    class="button project-add-button">
                         <span aria-hidden="true">+</span>
                         Tambah Education
                     </a>
+                    {% endif %}
                 </div>
 
                 <div class="experience-grid">
@@ -26,7 +28,9 @@
                             <p class="education-start_year-end_year">
                                 {{ education.start_year }} &mdash; {{ education.end_year }}
                             </p>
-                            {% include "components/content_delete_modal.html" with item=education item_type="Education" delete_url_name="main:delete_education" %}
+                           {% if user.is_superuser %}
+                                {% include "components/content_delete_modal.html" with item=education item_type="Education" delete_url_name="main:delete_education" %}
+                        {% endif %}
                         </article>
                     {% empty %}
                         <p class="empty-state">

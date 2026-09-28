@@ -162,9 +162,13 @@ def show_projects(request):
     title_query = request.GET.get("title", "").strip()
 
     context = {
-        "name": "Farel Boston Corinthians Nadeak",
-        "project_list": projects,
-        "title_query": title_query,
+    "name": "Farel Boston Corinthians Nadeak",
+    "project_list": projects,
+    "title_query": title_query,
+    "is_editor": (
+        request.user.is_authenticated
+        and request.user.groups.filter(name="Editor").exists()
+        ),
     }
     return render(request, "project.html", context)
 
