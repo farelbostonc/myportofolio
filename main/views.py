@@ -7,7 +7,6 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required 
 from django.core.exceptions import PermissionDenied        
 from django.db.models import Count
-from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from main.forms import EducationForm, ExperienceForm, ProjectForm
@@ -153,21 +152,32 @@ def edit_project(request, project_id):
     return render(request, "projects_form.html", context)
 
 def show_projects(request):
-    json_response = get_projects_json(request)
-    projects = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    projects = [project.object for project in projects]
     title_query = request.GET.get("title", "").strip()
 
+    projects = Project.objects.annotate(
+        star_count=Count("starred_by", distinct=True)
+    )
+    if title_query:
+        projects = projects.filter(title__icontains=title_query)
+
+    starred_ids = set()
+    if request.user.is_authenticated:
+        starred_ids = set(
+            Project.objects.filter(starred_by=request.user)
+            .values_list("id", flat=True)
+        )
+
+    project_list = list(projects)
+    for project in project_list:
+        project.is_starred = project.id in starred_ids
+
     context = {
-    "name": "Farel Boston Corinthians Nadeak",
-    "project_list": projects,
-    "title_query": title_query,
-    "is_editor": (
-        request.user.is_authenticated
-        and request.user.groups.filter(name="Editor").exists()
+        "name": "Farel Boston Corinthians Nadeak",
+        "project_list": project_list,
+        "title_query": title_query,
+        "is_editor": (
+            request.user.is_authenticated
+            and request.user.groups.filter(name="Editor").exists()
         ),
     }
     return render(request, "project.html", context)
@@ -180,7 +190,16 @@ def get_projects_json(request):
         projects = projects.filter(title__icontains=title_query)
 
     projects_json = serializers.serialize(
-    "json", projects, use_natural_foreign_keys=True)
+    "json",
+    projects,
+    fields=(
+        "title",
+        "description",
+        "tech_stack",
+        "project_url",
+        "project_image_url",
+        ),
+    )
     return HttpResponse(projects_json, content_type="application/json")
 
 @role_required(owner_only=True)
@@ -229,15 +248,13 @@ def logout_user(request):
 
 # Tanpa cek is_superuser: semua akun yang sudah login boleh memberi star
 @login_required(login_url="/login/")
+@require_POST
 def toggle_star(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
 
-    if request.method == "POST":
-        # Kalau akun ini sudah pernah memberi star, batalkan star-nya.
-        # Kalau belum, tambahkan star.
-        if request.user in project.starred_by.all():
-            project.starred_by.remove(request.user)
-        else:
-            project.starred_by.add(request.user)
+    if project.starred_by.filter(pk=request.user.pk).exists():
+        project.starred_by.remove(request.user)
+    else:
+        project.starred_by.add(request.user)
 
     return redirect("main:show_projects")
