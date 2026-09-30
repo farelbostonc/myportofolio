@@ -224,17 +224,18 @@ class MainTest(TestCase):
         self.client.post(star_url)
         self.assertEqual(self.project.starred_by.count(), 0)
 
-    def test_project_page_shows_star_count_and_current_status(self):
+    def test_project_page_renders_ajax_container_for_starred_projects(self):
         self.setUpTestUsers()
         self.project.starred_by.add(self.regular)
         self.client.force_login(self.regular)
 
         response = self.client.get(reverse("main:show_projects"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Batalkan star")
-        self.assertContains(response, 'class="star-count">1</span>', html=False)
+        self.assertContains(response, 'id="grid"')
+        self.assertContains(response, "BASE_PROJECTS_ENDPOINT")
+        self.assertNotContains(response, self.project.title)
 
-    def test_json_contains_only_public_project_fields(self):
+    def test_json_contains_project_fields_and_star_data(self):
         self.setUpTestUsers()
         self.project.starred_by.add(self.regular)
 
@@ -251,4 +252,45 @@ class MainTest(TestCase):
             "tech_stack",
             "project_url",
             "project_image_url",
+            "star_count",
+            "is_starred",
+            "starred_by_names",
         })
+        self.assertEqual(data[0]["fields"]["star_count"], 1)
+        self.assertFalse(data[0]["fields"]["is_starred"])
+        self.assertEqual(data[0]["fields"]["starred_by_names"], "regular")
+
+    def test_ajax_create_requires_superuser(self):
+        create_url = reverse("main:create_project_ajax")
+        self.assertEqual(self.client.post(create_url, self.project_data()).status_code, 403)
+
+        self.setUpTestUsers()
+        self.client.force_login(self.regular)
+        self.assertEqual(self.client.post(create_url, self.project_data()).status_code, 403)
+
+    def test_ajax_create_saves_sanitized_project_for_owner(self):
+        self.setUpTestUsers()
+        self.client.force_login(self.owner)
+        payload = self.project_data(title="<b>New Project</b>")
+        payload["description"] = "<p>Project details</p>"
+        payload["tech_stack"] = "<i>Django</i>"
+
+        response = self.client.post(reverse("main:create_project_ajax"), payload)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response["Content-Type"].startswith("application/json"))
+        project = Project.objects.get(pk=response.json()["pk"])
+        self.assertEqual(project.title, "New Project")
+        self.assertEqual(project.description, "Project details")
+        self.assertEqual(project.tech_stack, "Django")
+
+    def test_ajax_create_rejects_title_that_is_only_html(self):
+        self.setUpTestUsers()
+        self.client.force_login(self.owner)
+        payload = self.project_data(title='<img src="x" onerror="alert(1)">')
+
+        response = self.client.post(reverse("main:create_project_ajax"), payload)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("title", response.json()["errors"])
+        self.assertFalse(Project.objects.exclude(pk=self.project.pk).exists())

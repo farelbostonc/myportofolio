@@ -1,12 +1,10 @@
 from django.contrib import messages
-from django.core import serializers
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required 
 from django.core.exceptions import PermissionDenied        
-from django.db.models import Count
 from django.views.decorators.http import require_POST
 
 from main.forms import EducationForm, ExperienceForm, ProjectForm
@@ -153,28 +151,10 @@ def edit_project(request, project_id):
 
 def show_projects(request):
     title_query = request.GET.get("title", "").strip()
-
-    projects = Project.objects.annotate(
-        star_count=Count("starred_by", distinct=True)
-    )
-    if title_query:
-        projects = projects.filter(title__icontains=title_query)
-
-    starred_ids = set()
-    if request.user.is_authenticated:
-        starred_ids = set(
-            Project.objects.filter(starred_by=request.user)
-            .values_list("id", flat=True)
-        )
-
-    project_list = list(projects)
-    for project in project_list:
-        project.is_starred = project.id in starred_ids
-
     context = {
         "name": "Farel Boston Corinthians Nadeak",
-        "project_list": project_list,
         "title_query": title_query,
+        "form": ProjectForm(),
         "is_editor": (
             request.user.is_authenticated
             and request.user.groups.filter(name="Editor").exists()
@@ -184,23 +164,50 @@ def show_projects(request):
 
 def get_projects_json(request):
     title_query = request.GET.get("title", "").strip()
-    projects = Project.objects.all()
+    projects = Project.objects.prefetch_related("starred_by").all()
 
     if title_query:
         projects = projects.filter(title__icontains=title_query)
 
-    projects_json = serializers.serialize(
-    "json",
-    projects,
-    fields=(
-        "title",
-        "description",
-        "tech_stack",
-        "project_url",
-        "project_image_url",
-        ),
-    )
-    return HttpResponse(projects_json, content_type="application/json")
+    data = []
+    for project in projects:
+        starred_users = list(project.starred_by.all())
+        data.append({
+            "pk": str(project.id),
+            "fields": {
+                "title": project.title,
+                "description": project.description,
+                "tech_stack": project.tech_stack,
+                "project_url": project.project_url,
+                "project_image_url": project.project_image_url,
+                "star_count": len(starred_users),
+                "is_starred": (
+                    request.user.is_authenticated
+                    and any(user.pk == request.user.pk for user in starred_users)
+                ),
+                "starred_by_names": ", ".join(
+                    user.username for user in starred_users
+                ),
+            },
+        })
+    return JsonResponse(data, safe=False)
+
+
+@require_POST
+def create_project_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan proyek."},
+            status=403,
+        )
+    form = ProjectForm(request.POST)
+    if form.is_valid():
+        project = form.save()
+        return JsonResponse(
+            {"message": "Proyek berhasil ditambahkan.", "pk": str(project.id)},
+            status=201,
+        )
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
 
 @role_required(owner_only=True)
 @require_POST

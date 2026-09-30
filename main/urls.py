@@ -4,6 +4,7 @@ from main.views import (
     create_education,
     create_experience,
     create_project,
+    create_project_ajax,
     delete_education,
     delete_experience,
     delete_project,
@@ -38,6 +39,7 @@ urlpatterns = [
         name="delete_education",
     ),
     path("projects/add/", create_project, name="create_project"),
+    path("projects/add-ajax/", create_project_ajax, name="create_project_ajax"),
     path("projects/", show_projects, name="show_projects"),
     path("api/projects/", get_projects_json, name="get_projects_json"),
     path(
