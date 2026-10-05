@@ -77,17 +77,23 @@ class MainTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "education.html")
 
-    # 2. Data Education muncul pada halaman HTML
-    def test_education_data_appears_on_page(self):
+    def test_education_page_renders_ajax_container(self):
         response = self.client.get(
             reverse("main:show_education")
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.education.title)
-        self.assertContains(response, self.education.description)
-        self.assertContains(response, self.education.start_year)
-        self.assertContains(response, self.education.end_year)
+        self.assertContains(response, 'id="education-grid"')
+        self.assertContains(response, reverse("main:get_education_json"))
+        self.assertNotContains(response, self.education.title)
+
+        data = self.client.get(reverse("main:get_education_json")).json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["pk"], str(self.education.pk))
+        self.assertEqual(data[0]["fields"]["title"], self.education.title)
+        self.assertEqual(data[0]["fields"]["description"], self.education.description)
+        self.assertEqual(data[0]["fields"]["start_year"], self.education.start_year)
+        self.assertEqual(data[0]["fields"]["end_year"], self.education.end_year)
 
     # 3. Menampilkan pesan jika belum ada data Education
     def test_empty_education_page(self):
@@ -101,6 +107,10 @@ class MainTest(TestCase):
         self.assertContains(
             response,
             "Belum ada edukasi yang ditambahkan."
+        )
+        self.assertEqual(
+            self.client.get(reverse("main:get_education_json")).json(),
+            [],
         )
 
     def setUpTestUsers(self):

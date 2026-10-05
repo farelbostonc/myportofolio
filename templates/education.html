@@ -1,44 +1,111 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block meta %}
     <title>Education - {{ name }}</title>
+    <link rel="stylesheet" href="{% static 'css/education.css' %}">
+    <script src="{% static 'js/education.js' %}" defer></script>
 {% endblock meta %}
+
 {% block content %}
-    <main>
-        <section class="experience-section" id="education">
-            <div class="container">
-                <p class="section-kicker">My Education</p>
-                <div class="project-header">
-                    <h1>Education</h1>
-                    {% if user.is_superuser %}
-                    <a href="{% url 'main:create_education' %}"
-                    class="button project-add-button">
+<main>
+    <section class="experience-section" id="education">
+        <div id="education-app"
+             class="container education-page"
+             data-list-url="{% url 'main:get_education_json' %}"
+             data-create-url="{% url 'main:create_education_ajax' %}"
+             data-login-url="{% url 'main:login' %}"
+             data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}"
+             data-owner="{{ user.is_superuser|yesno:'true,false' }}"
+             aria-busy="true">
+            <div hidden>{% csrf_token %}</div>
+
+            <p class="section-kicker">My Education</p>
+            <div class="project-header">
+                <h1>Education</h1>
+                {% if user.is_superuser %}
+                    <button id="open-education-modal"
+                            type="button"
+                            class="button project-add-button">
                         <span aria-hidden="true">+</span>
                         Tambah Education
-                    </a>
-                    {% endif %}
-                </div>
-
-                <div class="experience-grid">
-                    {% for education in education_list %}
-                        <article class="education-card">
-                            <h2>{{ education.title }}</h2>
-                            <p class="education-description">
-                                {{ education.description }}
-                            </p>
-                            <p class="education-start_year-end_year">
-                                {{ education.start_year }} &mdash; {{ education.end_year }}
-                            </p>
-                           {% if user.is_superuser %}
-                                {% include "components/content_delete_modal.html" with item=education item_type="Education" delete_url_name="main:delete_education" %}
-                        {% endif %}
-                        </article>
-                    {% empty %}
-                        <p class="empty-state">
-                            Belum ada edukasi yang ditambahkan.
-                        </p>
-                    {% endfor %}
-                </div>
+                    </button>
+                {% endif %}
             </div>
-        </section>
-    </main>
+
+            <form id="education-search-form" class="project-search">
+                <input id="education-search"
+                       type="search"
+                       name="title"
+                       value="{{ title_query }}"
+                       class="project-search__input"
+                       placeholder="Cari program atau institusi"
+                       aria-label="Cari program atau institusi">
+                <button type="submit" class="button">Cari</button>
+            </form>
+
+            <div id="education-loading" class="empty-state" role="status">
+                <p>Memuat data pendidikan...</p>
+            </div>
+            <div id="education-error" class="empty-state" role="alert" hidden>
+                <p id="education-error-message"></p>
+                <button id="education-retry" type="button" class="button button-secondary">
+                    Coba lagi
+                </button>
+            </div>
+            <div id="education-empty" class="empty-state" role="status" hidden>
+                <p id="education-empty-message">Belum ada edukasi yang ditambahkan.</p>
+            </div>
+            <p id="education-results" class="education-results" aria-live="polite" hidden></p>
+            <div id="education-grid" class="experience-grid" hidden></div>
+
+            <noscript>Aktifkan JavaScript untuk menampilkan daftar pendidikan.</noscript>
+
+            {% if user.is_superuser %}
+                <dialog id="education-add-dialog"
+                        class="education-dialog"
+                        aria-labelledby="education-add-title">
+                    <h2 id="education-add-title">Tambah Pendidikan</h2>
+                    <form id="education-form"
+                          method="post"
+                          action="{% url 'main:create_education_ajax' %}"
+                          class="project-form">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                <p id="education-error-{{ field.name }}"
+                                   class="form-error"
+                                   data-error-for="{{ field.name }}"
+                                   hidden></p>
+                            </div>
+                        {% endfor %}
+                        <div class="education-dialog-actions">
+                            <button type="button" class="button button-secondary" data-close-dialog>
+                                Batal
+                            </button>
+                            <button type="submit" class="button">Simpan Pendidikan</button>
+                        </div>
+                    </form>
+                </dialog>
+
+                <dialog id="education-delete-dialog"
+                        class="education-dialog"
+                        aria-labelledby="education-delete-title">
+                    <h2 id="education-delete-title">Hapus Pendidikan?</h2>
+                    <p>Hapus <strong id="education-delete-name"></strong>?</p>
+                    <form id="education-delete-form" method="post">
+                        <div class="education-dialog-actions">
+                            <button type="button" class="button button-secondary" data-close-dialog>
+                                Batal
+                            </button>
+                            <button type="submit" class="button button-danger">Ya, Hapus</button>
+                        </div>
+                    </form>
+                </dialog>
+            {% endif %}
+        </div>
+    </section>
+</main>
 {% endblock content %}

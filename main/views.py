@@ -86,7 +86,8 @@ def delete_experience(request, experience_id):
 def show_education(request):
     context = {
         "name": "Farel Boston Corinthians Nadeak",
-        "education_list": Education.objects.all(),
+        "title_query": request.GET.get("title", "").strip(),
+        "form": EducationForm(),
     }
     return render(request, "education.html", context)
 
