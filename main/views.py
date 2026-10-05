@@ -1,16 +1,21 @@
+import datetime
+from functools import wraps
+
 from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
+from django.db.models import Count, Exists, OuterRef, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib.auth import login, logout
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth.decorators import login_required 
-from django.core.exceptions import PermissionDenied        
-from django.views.decorators.http import require_POST
+from django.urls import reverse
+from django.views.decorators.http import require_GET, require_POST
 
 from main.forms import EducationForm, ExperienceForm, ProjectForm
 from main.models import Education, Experience, Project
-import datetime
-from functools import wraps
+
 
 def role_required(*, owner_only=False):
     def decorator(view_func):
@@ -111,6 +116,138 @@ def delete_education(request, education_id):
     education.delete()
     messages.success(request, "Education berhasil dihapus!")
     return redirect("main:show_education")
+
+
+@require_GET
+def get_education_json(request):
+    title_query = request.GET.get("title", "").strip()
+    educations = Education.objects.annotate(
+        star_count=Count("starred_by"),
+    ).order_by("title", "id")
+
+    if request.user.is_authenticated:
+        user_stars = Education.starred_by.through.objects.filter(
+            education_id=OuterRef("pk"),
+            user_id=request.user.pk,
+        )
+        educations = educations.annotate(is_starred=Exists(user_stars))
+
+    if title_query:
+        educations = educations.filter(
+            Q(title__icontains=title_query)
+            | Q(description__icontains=title_query)
+        )
+
+    data = []
+    for education in educations:
+        data.append({
+            "pk": str(education.pk),
+            "fields": {
+                "title": education.title,
+                "description": education.description,
+                "start_year": education.start_year,
+                "end_year": education.end_year,
+                "star_count": education.star_count,
+                "is_starred": (
+                    education.is_starred
+                    if request.user.is_authenticated
+                    else False
+                ),
+            },
+            "urls": {
+                "star": reverse(
+                    "main:toggle_education_star_ajax",
+                    args=[education.pk],
+                ),
+                "delete": reverse(
+                    "main:delete_education_ajax",
+                    args=[education.pk],
+                ),
+            },
+        })
+
+    return JsonResponse(data, safe=False)
+
+
+@require_POST
+def create_education_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambah pendidikan."},
+            status=403,
+        )
+
+    form = EducationForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse(
+            {"errors": form.errors.get_json_data()},
+            status=400,
+        )
+
+    education = form.save()
+    return JsonResponse(
+        {
+            "message": "Pendidikan berhasil ditambahkan.",
+            "pk": str(education.pk),
+        },
+        status=201,
+    )
+
+
+@require_POST
+def toggle_education_star_ajax(request, education_id):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"message": "Silakan login untuk memberi star."},
+            status=403,
+        )
+
+    with transaction.atomic():
+        education = (
+            Education.objects.select_for_update()
+            .filter(pk=education_id)
+            .first()
+        )
+        if education is None:
+            return JsonResponse(
+                {"message": "Data pendidikan tidak ditemukan."},
+                status=404,
+            )
+
+        if education.starred_by.filter(pk=request.user.pk).exists():
+            education.starred_by.remove(request.user)
+            is_starred = False
+        else:
+            education.starred_by.add(request.user)
+            is_starred = True
+
+        star_count = education.starred_by.count()
+
+    return JsonResponse({
+        "star_count": star_count,
+        "is_starred": is_starred,
+        "message": "Star ditambahkan." if is_starred else "Star dibatalkan.",
+    })
+
+
+@require_POST
+def delete_education_ajax(request, education_id):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menghapus pendidikan."},
+            status=403,
+        )
+
+    education = Education.objects.filter(pk=education_id).first()
+    if education is None:
+        return JsonResponse(
+            {"message": "Data pendidikan tidak ditemukan."},
+            status=404,
+        )
+
+    education.delete()
+    return JsonResponse({"message": "Pendidikan berhasil dihapus."})
+
 
 @role_required(owner_only=True)
 def create_project(request):

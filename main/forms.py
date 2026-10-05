@@ -1,8 +1,9 @@
-from django.forms import DateTimeInput, ModelForm, TextInput, Textarea, URLInput
 from django.core.exceptions import ValidationError
+from django.forms import DateTimeInput, ModelForm, TextInput, Textarea, URLInput
 from django.utils.html import strip_tags
 
 from main.models import Education, Experience, Project
+
 
 class ProjectForm(ModelForm):
     class Meta:
@@ -117,3 +118,24 @@ class EducationForm(ModelForm):
             "start_year": TextInput(attrs={"placeholder": "2025"}),
             "end_year": TextInput(attrs={"placeholder": "Present"}),
         }
+
+    def _clean_text(self, field_name):
+        value = strip_tags(self.cleaned_data[field_name]).strip()
+        if not value:
+            raise ValidationError(
+                "Kolom ini tidak boleh kosong atau hanya berisi tag HTML.",
+                code="required",
+            )
+        return value
+
+    def clean_title(self):
+        return self._clean_text("title")
+
+    def clean_description(self):
+        return self._clean_text("description")
+
+    def clean_start_year(self):
+        return self._clean_text("start_year")
+
+    def clean_end_year(self):
+        return self._clean_text("end_year")
