@@ -68,6 +68,24 @@ Pengunjung dapat membaca halaman dan API publik, tetapi diarahkan ke login saat 
 
 Peran Editor menggunakan Django Group bernama Editor. Grup dan anggota Editor ditetapkan melalui Django Admin di admin. Star disimpan melalui relasi ManyToMany antara Project dan User serta diubah hanya melalui POST dengan CSRF token. Endpoint /api/projects/ tetap tersedia dengan field proyek yang bersifat publik.
 
+TUGAS 5
+# Implementasi
+- Halaman Education menggunakan Fetch API untuk memuat daftar dan melakukan pencarian dengan debounce 300 ms. Penambahan data dilakukan melalui modal, sedangkan star/batal star dan penghapusan berjalan tanpa memuat ulang halaman.
+- Halaman menyediakan kondisi loading, data kosong, error, serta notifikasi toast. Semua pengunjung dapat membaca data, pengguna yang login dapat memberi star, dan hanya superuser yang dapat menambah atau menghapus data.
+- POST dilindungi CSRF. Input dibersihkan menggunakan strip_tags melalui EducationForm, sedangkan teks pada kartu ditampilkan menggunakan textContent.
+
+# Jawaban Reflektif
+1. Debouncing menunda pemanggilan fungsi sampai pengguna berhenti melakukan suatu aksi selama waktu tertentu. Pada pencarian Education, permintaan dikirim setelah pengguna berhenti mengetik selama 300 ms. Dengan demikian, aplikasi tidak mengirim permintaan untuk setiap ketukan tombol sehingga mengurangi beban server.
+
+2. await fetch() menunggu Promise selesai sehingga kode berikutnya dapat menggunakan objek Response. await response.json() kemudian menunggu body respons selesai dibaca dan diubah menjadi data JavaScript. Tanpa await, hasilnya masih berupa Promise sehingga perlu ditangani dengan .then() atau ditunggu di bagian lain. await tidak membekukan seluruh halaman, tetapi menunda kelanjutan fungsi async tersebut.
+
+3. XSS adalah penyisipan skrip berbahaya yang kemudian dijalankan oleh browser pengunjung. Template Django melakukan escaping secara otomatis secara default, sedangkan penyisipan data melalui innerHTML dapat menafsirkan input sebagai HTML. AJAX sendiri tidak otomatis menyebabkan XSS, resikonya bergantung pada cara data ditampilkan. Pada implementasi ini, textContent digunakan agarr input diperlakukan sebagai teks, disertai pembersihan input di server menggunakan strip_tags.
+
+# AI Disclosure
+Saya menggunakan ChatGPT (masih sesi yang sama) https://chatgpt.com/share/6a9ed064-b944-83ec-94a9-4222fa6a3986  untuk membantu implementasi AJAX Education, peninjauan kode, serta penyusunan tes dan dokumentasi. 
+- STrategi Prompt: Prompt diberikan bersama kode proyek dan ketentuan tugas agar saran mengikuti struktur aplikasi yang ada.
+- Analisa: Hasil AI diperiksa kembali sebelum digunakan. Kode tes dari chatgpt awalnya menggunakan grup EditorAjax, padahal aplikasi mengenali Editor. Tes pencarian deskripsi juga memakai kata yang terdapat pada judul sehingga belum membuktikan pencarian deskripsi bekerja. Kedua bagian tersebut saya koreksi. Kesalahan indentasi saat menempelkan class tes turut diperbaiki, lalu seluruh 34 tes dijalankan dan lulus.
+- Evaluasi: Dari pemeriksaan ini, saya melihat bahwa tes yang lulus belum tentu menguji hal yang dimaksud. Karena itu, isi tes tetap perlu diperiksa dan interaksi halaman juga perlu dicoba melalui browser. Hasil AI pun ga sepenuhnya terpercaya, bisa aja ada kesalahan.
 
 
 
