@@ -85,7 +85,7 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="education-grid"')
-        self.assertContains(response, reverse("main:get_education_json"))
+        self.assertContains(response, reverse("api:education-list"))
         self.assertNotContains(response, self.education.title)
 
         data = self.client.get(reverse("main:get_education_json")).json()
@@ -733,3 +733,78 @@ class EducationAjaxTest(TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Education.objects.count(), initial_count + 1)
+
+
+from rest_framework.test import APITestCase
+import uuid
+from django.contrib.auth.models import Group, User
+
+class EducationAPITest(APITestCase):
+
+    def setUp(self):
+        self.owner = User.objects.create_superuser('education-owner', 'owner@example.com', 'test-password')
+        self.visitor = User.objects.create_user('education-visitor', password='test-password')
+        self.editor = User.objects.create_user('education-editor', password='test-password')
+        self.editor.groups.add(Group.objects.create(name='Editor'))
+        self.staff = User.objects.create_user('education-staff', password='test-password', is_staff=True)
+        self.payload = {'title': 'S1 Sistem Informasi', 'description': 'Universitas Indonesia', 'start_year': '2025', 'end_year': 'Present'}
+        self.education = Education.objects.create(**self.payload)
+        self.list_url = reverse('api:education-list')
+        self.detail_url = reverse('api:education-detail', args=[self.education.pk])
+        self.star_url = reverse('api:education-star', args=[self.education.pk])
+
+    def test_public_reads_search_and_empty(self):
+        for user in (None, self.visitor, self.editor, self.owner):
+            self.client.force_authenticate(user=user)
+            response = self.client.get(self.list_url)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data[0]['id'], str(self.education.pk))
+            self.assertNotIn('fields', response.data[0])
+            self.assertEqual(self.client.get(self.detail_url).status_code, 200)
+        for query in ('SISTEM', 'indonesia'):
+            self.assertEqual(len(self.client.get(self.list_url, {'title': query}).data), 1)
+        self.assertEqual(self.client.get(self.list_url, {'title': 'missing'}).data, [])
+
+    def test_role_permissions(self):
+        for user in (None, self.visitor, self.staff, self.editor):
+            self.client.force_authenticate(user=user)
+            self.assertEqual(self.client.post(self.list_url, self.payload, format='json').status_code, 403)
+            self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
+            if user != self.editor:
+                self.assertEqual(self.client.patch(self.detail_url, {'title': 'Forbidden'}, format='json').status_code, 403)
+                self.assertEqual(self.client.put(self.detail_url, self.payload, format='json').status_code, 403)
+        self.assertEqual(Education.objects.count(), 1)
+        self.education.refresh_from_db()
+        self.assertEqual(self.education.title, self.payload['title'])
+
+    def test_editor_can_patch_and_put(self):
+        self.client.force_authenticate(user=self.editor)
+        response = self.client.patch(self.detail_url, {'title': 'Updated'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.education.refresh_from_db()
+        self.assertEqual(self.education.title, 'Updated')
+        self.assertEqual(self.education.description, self.payload['description'])
+        self.assertEqual(self.client.put(self.detail_url, {'title': 'Incomplete'}, format='json').status_code, 400)
+        self.assertEqual(self.client.put(self.detail_url, self.payload, format='json').status_code, 200)
+
+    def test_star_uses_current_account(self):
+        self.assertEqual(self.client.post(self.star_url).status_code, 403)
+        for user in (self.visitor, self.editor, self.owner):
+            self.client.force_authenticate(user=user)
+            response = self.client.post(self.star_url, {'user': self.staff.pk}, format='json')
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.data['is_starred'])
+            self.assertEqual(response.data['star_count'], 1)
+            self.assertTrue(self.education.starred_by.filter(pk=user.pk).exists())
+            self.assertFalse(self.education.starred_by.filter(pk=self.staff.pk).exists())
+            self.assertFalse(self.client.post(self.star_url).data['is_starred'])
+
+    def test_missing_and_wrong_methods(self):
+        self.assertEqual(self.client.get(reverse('api:education-detail', args=[uuid.uuid4()])).status_code, 404)
+        self.client.force_authenticate(user=self.owner)
+        self.assertEqual(self.client.delete(self.list_url).status_code, 405)
+        self.assertEqual(self.client.get(self.star_url).status_code, 405)
+        self.assertEqual(self.client.post(reverse('api:education-star', args=[uuid.uuid4()])).status_code, 404)
+        for method in ('head', 'options'):
+            self.assertEqual(getattr(self.client, method)(self.list_url).status_code, 200)
+        self.assertEqual(Education.objects.count(), 1)

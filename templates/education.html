@@ -12,8 +12,10 @@
     <section class="experience-section" id="education">
         <div id="education-app"
              class="container education-page"
-             data-list-url="{% url 'main:get_education_json' %}"
-             data-create-url="{% url 'main:create_education_ajax' %}"
+             data-list-url="{% url 'api:education-list' %}"
+             data-create-url="{% url 'api:education-list' %}"
+             data-detail-url="{% url 'api:education-detail' '00000000-0000-0000-0000-000000000000' %}"
+             data-star-url="{% url 'api:education-star' '00000000-0000-0000-0000-000000000000' %}"
              data-login-url="{% url 'main:login' %}"
              data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}"
              data-owner="{{ user.is_superuser|yesno:'true,false' }}"
@@ -68,7 +70,7 @@
                     <h2 id="education-add-title">Tambah Pendidikan</h2>
                     <form id="education-form"
                           method="post"
-                          action="{% url 'main:create_education_ajax' %}"
+                          action="{% url 'api:education-list' %}"
                           class="project-form">
                         {% csrf_token %}
                         {% for field in form %}

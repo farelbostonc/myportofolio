@@ -29,6 +29,10 @@
     let dataRevision = 0;
     let selectedForDeletion = null;
 
+    function endpoint(pattern, id) {
+        return pattern.replace("00000000-0000-0000-0000-000000000000", id);
+    }
+
     function setState(activeState, message = "") {
         for (const [name, node] of Object.entries(states)) {
             node.hidden = name !== activeState;
@@ -57,6 +61,7 @@
             throw new Error("Tidak dapat terhubung ke server. Coba lagi.");
         }
 
+        if (response.status === 204) return null;
         let data;
         try {
             data = await response.json();
@@ -68,24 +73,23 @@
         }
 
         if (!response.ok) {
-            const messages = Object.values(data.errors || {})
+            const messages = Object.values(data)
                 .flat()
-                .map(error => error.message)
-                .filter(Boolean);
+                .filter(value => typeof value === "string");
             const error = new Error(messages.join(" ")
-                || data.message
+                || data.detail
                 || `Permintaan gagal (HTTP ${response.status}).`);
-            error.fields = data.errors || {};
+            error.fields = data;
             throw error;
         }
         return data;
     }
 
-    function postJson(url, body) {
+    function writeJson(url, method, body) {
         return requestJson(url, {
-            method: "POST",
-            headers: { "X-CSRFToken": csrfToken },
-            body,
+            method,
+            headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/json" },
+            body: body === undefined ? undefined : JSON.stringify(body),
         });
     }
 
@@ -104,7 +108,7 @@
     }
 
     function buildCard(item) {
-        const fields = item.fields;
+        const fields = item;
         const article = makeElement("article", "education-card");
         article.append(
             makeElement("h2", "", fields.title),
@@ -118,8 +122,8 @@
             const button = makeElement("button", "button button-star");
             button.type = "button";
             button.dataset.action = "star";
-            button.dataset.id = item.pk;
-            button.disabled = pendingStars.has(item.pk);
+            button.dataset.id = item.id;
+            button.disabled = pendingStars.has(item.id);
             updateStarButton(button, fields);
             actions.append(button);
         } else {
@@ -133,7 +137,7 @@
             const button = makeElement("button", "button button-danger", "Hapus");
             button.type = "button";
             button.dataset.action = "delete";
-            button.dataset.id = item.pk;
+            button.dataset.id = item.id;
             actions.append(button);
         }
         article.append(actions);
@@ -144,7 +148,7 @@
         items.clear();
         const fragment = document.createDocumentFragment();
         for (const item of data) {
-            items.set(item.pk, item);
+            items.set(item.id, item);
             fragment.append(buildCard(item));
         }
         grid.replaceChildren(fragment);
@@ -195,7 +199,7 @@
             const name = node.dataset.errorFor;
             const field = educationForm.elements.namedItem(name);
             const messages = errors[name] || [];
-            node.textContent = messages.map(error => error.message).join(" ");
+            node.textContent = messages.join(" ");
             node.hidden = messages.length === 0;
             field.setAttribute("aria-describedby", node.id);
             if (messages.length) {
@@ -213,25 +217,25 @@
     }
 
     async function toggleStar(item, button) {
-        if (pendingStars.has(item.pk)) return;
-        pendingStars.add(item.pk);
+        if (pendingStars.has(item.id)) return;
+        pendingStars.add(item.id);
         button.disabled = true;
         try {
-            const result = await postJson(item.urls.star);
+            const result = await writeJson(endpoint(app.dataset.starUrl, item.id), "POST");
             dataRevision += 1;
-            const currentItem = items.get(item.pk);
-            const currentButton = findStarButton(item.pk);
+            const currentItem = items.get(item.id);
+            const currentButton = findStarButton(item.id);
             if (currentItem && currentButton) {
-                currentItem.fields.star_count = result.star_count;
-                currentItem.fields.is_starred = result.is_starred;
-                updateStarButton(currentButton, currentItem.fields);
+                currentItem.star_count = result.star_count;
+                currentItem.is_starred = result.is_starred;
+                updateStarButton(currentButton, currentItem);
             }
-            showToast("Berhasil", result.message, "success");
+            showToast("Berhasil", result.is_starred ? "Star ditambahkan." : "Star dibatalkan.", "success");
         } catch (error) {
             showToast("Gagal memperbarui star", error.message, "error");
         } finally {
-            pendingStars.delete(item.pk);
-            const currentButton = findStarButton(item.pk);
+            pendingStars.delete(item.id);
+            const currentButton = findStarButton(item.id);
             if (currentButton) currentButton.disabled = false;
         }
     }
@@ -244,7 +248,7 @@
         if (button.dataset.action === "star") toggleStar(item, button);
         if (button.dataset.action === "delete" && deleteDialog) {
             selectedForDeletion = item;
-            document.getElementById("education-delete-name").textContent = item.fields.title;
+            document.getElementById("education-delete-name").textContent = item.title;
             deleteDialog.showModal();
         }
     });
@@ -281,11 +285,14 @@
             const formData = new FormData(educationForm);
             setFormBusy(educationForm, true);
             try {
-                const result = await postJson(app.dataset.createUrl, formData);
+                const payload = Object.fromEntries(
+                    ["title", "description", "start_year", "end_year"].map(name => [name, formData.get(name)])
+                );
+                await writeJson(app.dataset.createUrl, "POST", payload);
                 dataRevision += 1;
                 educationForm.reset();
                 addDialog.close();
-                showToast("Berhasil", result.message, "success");
+                showToast("Berhasil", "Pendidikan berhasil disimpan.", "success");
                 await loadEducation();
             } catch (error) {
                 showFormErrors(error.fields || {});
@@ -303,11 +310,11 @@
             const item = selectedForDeletion;
             setFormBusy(deleteForm, true);
             try {
-                const result = await postJson(item.urls.delete);
+                await writeJson(endpoint(app.dataset.detailUrl, item.id), "DELETE");
                 dataRevision += 1;
                 deleteDialog.close();
                 selectedForDeletion = null;
-                showToast("Berhasil", result.message, "success");
+                showToast("Berhasil", "Pendidikan berhasil dihapus.", "success");
                 await loadEducation();
                 searchInput.focus();
             } catch (error) {
