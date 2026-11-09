@@ -53,15 +53,25 @@ class EducationSerializer(serializers.ModelSerializer):
                   "star_count", "is_starred"]
         read_only_fields = ["id"]
 
-    def validate(self, attrs):
-        errors = {}
-        for name, value in attrs.items():
-            attrs[name] = strip_tags(value).strip()
-            if not attrs[name]:
-                errors[name] = ["Kolom ini tidak boleh kosong atau hanya berisi tag HTML."]
-        if errors:
-            raise serializers.ValidationError(errors)
-        return attrs
+    def _validate_text(self, value):
+        value = strip_tags(value).strip()
+        if not value:
+            raise serializers.ValidationError(
+                "Kolom ini tidak boleh kosong atau hanya berisi tag HTML."
+            )
+        return value
+
+    def validate_title(self, value):
+        return self._validate_text(value)
+
+    def validate_description(self, value):
+        return self._validate_text(value)
+
+    def validate_start_year(self, value):
+        return self._validate_text(value)
+
+    def validate_end_year(self, value):
+        return self._validate_text(value)
 
     def get_star_count(self, obj):
         return obj.starred_by.count()

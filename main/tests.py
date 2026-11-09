@@ -808,3 +808,60 @@ class EducationAPITest(APITestCase):
         for method in ('head', 'options'):
             self.assertEqual(getattr(self.client, method)(self.list_url).status_code, 200)
         self.assertEqual(Education.objects.count(), 1)
+
+    def test_text_fields_reject_empty_input_without_changing_data(self):
+        self.client.force_authenticate(user=self.owner)
+        for field in self.payload:
+            for value in ("", "   ", '<img src="x" onerror="alert(1)">', "<b> </b>"):
+                for method in ("post", "put", "patch"):
+                    with self.subTest(field=field, value=value, method=method):
+                        payload = {field: value} if method == "patch" else {
+                            **self.payload, field: value,
+                        }
+                        url = self.list_url if method == "post" else self.detail_url
+                        response = getattr(self.client, method)(url, payload, format="json")
+                        self.assertEqual(response.status_code, 400)
+                        self.assertIn(field, response.data)
+                        self.assertEqual(Education.objects.count(), 1)
+                        self.education.refresh_from_db()
+                        for name, expected in self.payload.items():
+                            self.assertEqual(getattr(self.education, name), expected)
+
+    def test_create_sanitizes_all_text_fields(self):
+        self.client.force_authenticate(user=self.owner)
+        payload = {
+            name: f"  <b>{value}</b>  " for name, value in self.payload.items()
+        }
+        response = self.client.post(self.list_url, payload, format="json")
+        self.assertEqual(response.status_code, 201)
+        education = Education.objects.get(pk=response.data["id"])
+        for name, expected in self.payload.items():
+            self.assertEqual(response.data[name], expected)
+            self.assertEqual(getattr(education, name), expected)
+
+    def test_patch_sanitizes_each_field_and_preserves_omitted_fields(self):
+        self.client.force_authenticate(user=self.editor)
+        expected = dict(self.payload)
+        for name, value in self.payload.items():
+            with self.subTest(field=name):
+                cleaned = f"{value} updated"
+                response = self.client.patch(
+                    self.detail_url, {name: f"  <b>{cleaned}</b>  "}, format="json",
+                )
+                self.assertEqual(response.status_code, 200)
+                expected[name] = cleaned
+                self.education.refresh_from_db()
+                for field, field_value in expected.items():
+                    self.assertEqual(response.data[field], field_value)
+                    self.assertEqual(getattr(self.education, field), field_value)
+
+    def test_put_sanitizes_all_text_fields(self):
+        self.client.force_authenticate(user=self.editor)
+        expected = {**self.payload, "title": "S2 Sistem Informasi"}
+        payload = {name: f"  <b>{value}</b>  " for name, value in expected.items()}
+        response = self.client.put(self.detail_url, payload, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.education.refresh_from_db()
+        for name, value in expected.items():
+            self.assertEqual(response.data[name], value)
+            self.assertEqual(getattr(self.education, name), value)
