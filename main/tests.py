@@ -735,7 +735,7 @@ class EducationAjaxTest(TestCase):
         self.assertEqual(Education.objects.count(), initial_count + 1)
 
 
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
 import uuid
 from django.contrib.auth.models import Group, User
 
@@ -949,3 +949,125 @@ class EducationAPITest(APITestCase):
                         response = getattr(self.client, method)(url)
                         self.assertEqual(response.status_code, 200)
                         self.assertEqual(self.education_state(), before)
+
+    def session_client(self, user):
+        client = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(client.login(username=user.username, password="test-password"))
+        response = client.get(reverse("main:show_education"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("csrftoken", client.cookies)
+        return client, client.cookies["csrftoken"].value
+
+    def test_session_writes_require_csrf_for_every_allowed_role(self):
+        self.education.starred_by.add(self.staff)
+        before = self.education_state()
+        for user in (self.visitor, self.editor, self.owner):
+            client, token = self.session_client(user)
+            actions = [("post", self.star_url, {})]
+            if user in (self.editor, self.owner):
+                actions.extend([
+                    ("put", self.detail_url, self.payload),
+                    ("patch", self.detail_url, {"title": "Changed"}),
+                ])
+            if user == self.owner:
+                actions.extend([
+                    ("post", self.list_url, self.payload),
+                    ("delete", self.detail_url, {}),
+                ])
+            for method, url, payload in actions:
+                for headers in ({}, {"HTTP_X_CSRFTOKEN": "invalid-token"}):
+                    with self.subTest(user=user.username, method=method, url=url, headers=headers):
+                        response = getattr(client, method)(url, payload, format="json", **headers)
+                        self.assertEqual(response.status_code, 403)
+                        self.assertIn("CSRF", str(response.data["detail"]))
+                        self.assertEqual(self.education_state(), before)
+
+    def test_owner_session_crud_with_valid_csrf(self):
+        client, token = self.session_client(self.owner)
+        headers = {"HTTP_X_CSRFTOKEN": token}
+        response = client.post(self.list_url, self.payload, format="json", **headers)
+        self.assertEqual(response.status_code, 201)
+        created_id = response.data["id"]
+        self.assertTrue(Education.objects.filter(pk=created_id).exists())
+        url = reverse("api:education-detail", args=[created_id])
+        for method in ("put", "patch"):
+            payload = {**self.payload, "title": method}
+            response = getattr(client, method)(url, payload, format="json", **headers)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(Education.objects.get(pk=created_id).title, method)
+        response = client.delete(url, **headers)
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Education.objects.filter(pk=created_id).exists())
+        self.assertTrue(Education.objects.filter(pk=self.education.pk).exists())
+
+    def test_editor_session_update_with_valid_csrf(self):
+        client, token = self.session_client(self.editor)
+        for method in ("put", "patch"):
+            with self.subTest(method=method):
+                response = getattr(client, method)(
+                    self.detail_url, {**self.payload, "title": method},
+                    format="json", HTTP_X_CSRFTOKEN=token,
+                )
+                self.assertEqual(response.status_code, 200)
+                self.education.refresh_from_db()
+                self.assertEqual(self.education.title, method)
+        before = self.education_state()
+        for method, url in (("post", self.list_url), ("delete", self.detail_url)):
+            response = getattr(client, method)(
+                url, self.payload, format="json", HTTP_X_CSRFTOKEN=token,
+            )
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(self.education_state(), before)
+
+    def test_session_star_ignores_forged_account_and_preserves_other_stars(self):
+        self.education.starred_by.add(self.staff)
+        forged = {"user": self.staff.pk, "user_id": self.staff.pk,
+                  "starred_by": [self.staff.pk], "star_count": 99, "is_starred": False}
+        for user in (self.visitor, self.editor, self.owner):
+            client, token = self.session_client(user)
+            for expected_starred, expected_count in ((True, 2), (False, 1)):
+                with self.subTest(user=user.username, starred=expected_starred):
+                    response = client.post(
+                        self.star_url, forged, format="json", HTTP_X_CSRFTOKEN=token,
+                    )
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.data["is_starred"], expected_starred)
+                    self.assertEqual(response.data["star_count"], expected_count)
+                    self.assertEqual(self.education.starred_by.filter(pk=user.pk).exists(), expected_starred)
+                    self.assertTrue(self.education.starred_by.filter(pk=self.staff.pk).exists())
+                    self.assertEqual(self.education.starred_by.count(), expected_count)
+
+    def test_guest_cannot_forge_star_account(self):
+        self.education.starred_by.add(self.staff)
+        before = self.education_state()
+        response = self.client.post(self.star_url, {"user": self.owner.pk}, format="json")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.education_state(), before)
+
+    def test_create_ignores_client_supplied_star_fields(self):
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(self.list_url, {
+            **self.payload, "star_count": 99, "is_starred": True,
+            "starred_by": [self.visitor.pk],
+        }, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["star_count"], 0)
+        self.assertFalse(response.data["is_starred"])
+        self.assertEqual(Education.objects.get(pk=response.data["id"]).starred_by.count(), 0)
+
+    def test_updates_cannot_overwrite_star_fields(self):
+        self.education.starred_by.add(self.owner, self.visitor)
+        for user in (self.owner, self.editor):
+            self.client.force_authenticate(user=user)
+            expected_starred = user == self.owner
+            for method in ("put", "patch"):
+                with self.subTest(user=user.username, method=method):
+                    response = getattr(self.client, method)(self.detail_url, {
+                        **self.payload, "star_count": 99,
+                        "is_starred": not expected_starred, "starred_by": [self.staff.pk],
+                    }, format="json")
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.data["star_count"], 2)
+                    self.assertEqual(response.data["is_starred"], expected_starred)
+                    self.assertSetEqual(set(self.education.starred_by.values_list("pk", flat=True)),
+                                        {self.owner.pk, self.visitor.pk})
