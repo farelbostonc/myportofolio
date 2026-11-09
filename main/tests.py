@@ -765,17 +765,27 @@ class EducationAPITest(APITestCase):
             self.assertEqual(len(self.client.get(self.list_url, {'title': query}).data), 1)
         self.assertEqual(self.client.get(self.list_url, {'title': 'missing'}).data, [])
 
+    def education_state(self):
+        return (
+            list(Education.objects.order_by("pk").values()),
+            list(Education.starred_by.through.objects.order_by("pk").values()),
+        )
+
     def test_role_permissions(self):
+        self.education.starred_by.add(self.visitor)
+        before = self.education_state()
         for user in (None, self.visitor, self.staff, self.editor):
             self.client.force_authenticate(user=user)
-            self.assertEqual(self.client.post(self.list_url, self.payload, format='json').status_code, 403)
-            self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
-            if user != self.editor:
-                self.assertEqual(self.client.patch(self.detail_url, {'title': 'Forbidden'}, format='json').status_code, 403)
-                self.assertEqual(self.client.put(self.detail_url, self.payload, format='json').status_code, 403)
-        self.assertEqual(Education.objects.count(), 1)
-        self.education.refresh_from_db()
-        self.assertEqual(self.education.title, self.payload['title'])
+            methods = ("post", "delete") if user == self.editor else (
+                "post", "put", "patch", "delete",
+            )
+            for method in methods:
+                with self.subTest(user=user, method=method):
+                    url = self.list_url if method == "post" else self.detail_url
+                    payload = {**self.payload, "title": "Forbidden"}
+                    response = getattr(self.client, method)(url, payload, format="json")
+                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(self.education_state(), before)
 
     def test_editor_can_patch_and_put(self):
         self.client.force_authenticate(user=self.editor)
@@ -865,3 +875,77 @@ class EducationAPITest(APITestCase):
         for name, value in expected.items():
             self.assertEqual(response.data[name], value)
             self.assertEqual(getattr(self.education, name), value)
+
+    def test_owner_can_create_education(self):
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(self.list_url, self.payload, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Education.objects.count(), 2)
+        created = Education.objects.get(pk=response.data["id"])
+        self.assertNotEqual(created.pk, self.education.pk)
+        for field, value in self.payload.items():
+            self.assertEqual(getattr(created, field), value)
+            self.assertEqual(response.data[field], value)
+
+    def test_owner_can_update_without_changing_stars(self):
+        self.education.starred_by.add(self.visitor)
+        self.client.force_authenticate(user=self.owner)
+        expected = dict(self.payload)
+        for method, payload in (
+            ("patch", {"title": "Updated program"}),
+            ("put", {**self.payload, "description": "Updated institution"}),
+        ):
+            with self.subTest(method=method):
+                response = getattr(self.client, method)(self.detail_url, payload, format="json")
+                self.assertEqual(response.status_code, 200)
+                expected.update(payload)
+                self.education.refresh_from_db()
+                for field, value in expected.items():
+                    self.assertEqual(getattr(self.education, field), value)
+                    self.assertEqual(response.data[field], value)
+                self.assertEqual(Education.objects.count(), 1)
+                self.assertEqual(list(self.education.starred_by.all()), [self.visitor])
+
+    def test_owner_delete_removes_only_target_and_its_stars(self):
+        other = Education.objects.create(**{**self.payload, "title": "Other program"})
+        self.education.starred_by.add(self.visitor)
+        other.starred_by.add(self.editor)
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.delete(self.detail_url)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, b"")
+        self.assertFalse(Education.objects.filter(pk=self.education.pk).exists())
+        self.assertFalse(Education.starred_by.through.objects.filter(
+            education_id=self.education.pk,
+        ).exists())
+        self.assertEqual(Education.objects.count(), 1)
+        other.refresh_from_db()
+        self.assertEqual(other.title, "Other program")
+        self.assertEqual(list(other.starred_by.all()), [self.editor])
+        self.assertTrue(User.objects.filter(pk=self.visitor.pk).exists())
+
+    def test_missing_detail_returns_404_without_changing_data(self):
+        self.education.starred_by.add(self.visitor)
+        self.client.force_authenticate(user=self.owner)
+        url = reverse("api:education-detail", args=[uuid.uuid4()])
+        before = self.education_state()
+        for method in ("get", "put", "patch", "delete"):
+            with self.subTest(method=method):
+                if method == "get":
+                    response = self.client.get(url)
+                else:
+                    response = getattr(self.client, method)(url, self.payload, format="json")
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(self.education_state(), before)
+
+    def test_safe_methods_preserve_education_and_stars_for_all_roles(self):
+        self.education.starred_by.add(self.visitor)
+        before = self.education_state()
+        for user in (None, self.visitor, self.editor, self.owner):
+            self.client.force_authenticate(user=user)
+            for url in (self.list_url, self.detail_url):
+                for method in ("get", "head", "options"):
+                    with self.subTest(user=user, url=url, method=method):
+                        response = getattr(self.client, method)(url)
+                        self.assertEqual(response.status_code, 200)
+                        self.assertEqual(self.education_state(), before)
