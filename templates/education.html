@@ -47,6 +47,13 @@
                 <button type="submit" class="button">Cari</button>
             </form>
 
+            {% if user.is_authenticated %}
+                <label class="education-filter" for="education-starred-filter">
+                    <input id="education-starred-filter" type="checkbox">
+                    <span>Yang saya beri star</span>
+                </label>
+            {% endif %}
+
             <div id="education-loading" class="empty-state" role="status">
                 <p>Memuat data pendidikan...</p>
             </div>

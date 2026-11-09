@@ -10,6 +10,7 @@
     const csrfToken = app.querySelector('[name="csrfmiddlewaretoken"]').value;
     const searchForm = document.getElementById("education-search-form");
     const searchInput = document.getElementById("education-search");
+    const starredFilter = document.getElementById("education-starred-filter");
     const grid = document.getElementById("education-grid");
     const resultCount = document.getElementById("education-results");
     const states = {
@@ -176,6 +177,8 @@
         const query = searchInput.value.trim();
         const url = new URL(app.dataset.listUrl, window.location.origin);
         if (query) url.searchParams.set("title", query);
+        const starredOnly = starredFilter?.checked === true;
+        if (starredOnly) url.searchParams.set("starred", "1");
         setState("loading");
 
         try {
@@ -188,9 +191,12 @@
             if (data.length) {
                 setState("grid");
             } else {
-                setState("empty", query
-                    ? "Tidak ada pendidikan yang sesuai dengan pencarian."
-                    : "Belum ada edukasi yang ditambahkan.");
+                const message = starredOnly
+                    ? (query ? "Tidak ada pendidikan yang kamu beri star sesuai pencarian."
+                        : "Belum ada pendidikan yang kamu beri star.")
+                    : (query ? "Tidak ada pendidikan yang sesuai dengan pencarian."
+                        : "Belum ada edukasi yang ditambahkan.");
+                setState("empty", message);
             }
         } catch (error) {
             if (controller.signal.aborted || error.name === "AbortError") return;
@@ -281,6 +287,12 @@
                 updateStarButton(currentButton, currentItem);
             }
             showToast("Berhasil", result.is_starred ? "Star ditambahkan." : "Star dibatalkan.", "success");
+            if (starredFilter?.checked && !result.is_starred) {
+                const restoreFocus = document.activeElement === currentButton
+                    || document.activeElement === document.body;
+                await loadEducation();
+                if (restoreFocus) starredFilter.focus();
+            }
         } catch (error) {
             showToast("Gagal memperbarui star", error.message, "error");
         } finally {
@@ -306,6 +318,8 @@
             openDialog(deleteDialog);
         }
     });
+
+    starredFilter?.addEventListener("change", loadEducation);
 
     searchInput.addEventListener("input", () => {
         clearTimeout(searchTimer);

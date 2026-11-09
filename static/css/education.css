@@ -83,3 +83,23 @@
         text-align: center;
     }
 }
+
+.education-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    margin-top: 0.5rem;
+    cursor: pointer;
+}
+
+.education-filter input {
+    width: 1.125rem;
+    height: 1.125rem;
+    accent-color: var(--accent);
+}
+
+.education-filter input:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}

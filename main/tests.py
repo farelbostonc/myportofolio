@@ -1093,3 +1093,59 @@ class EducationAPITest(APITestCase):
                         self.assertContains(response, control)
                     else:
                         self.assertNotContains(response, control)
+
+    def test_starred_filter_uses_current_user_and_combines_with_search(self):
+        other = Education.objects.create(**{**self.payload, "title": "Other program",
+                                            "description": "Different institution"})
+        self.education.starred_by.add(self.visitor, self.owner)
+        other.starred_by.add(self.editor)
+        before = self.education_state()
+        for user, expected in ((self.visitor, self.education), (self.editor, other),
+                               (self.owner, self.education)):
+            with self.subTest(user=user.username):
+                self.client.force_authenticate(user=user)
+                response = self.client.get(self.list_url, {"starred": "1", "user": self.staff.pk})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual([item["id"] for item in response.data], [str(expected.pk)])
+                self.assertTrue(response.data[0]["is_starred"])
+                self.assertEqual(response.data[0]["star_count"], expected.starred_by.count())
+                for query in (expected.title.upper(), expected.description.upper()):
+                    result = self.client.get(self.list_url, {"starred": "1", "title": query})
+                    self.assertEqual([item["id"] for item in result.data], [str(expected.pk)])
+                self.assertEqual(self.client.get(self.list_url, {
+                    "starred": "1", "title": "not-found",
+                }).data, [])
+                self.assertEqual(len(self.client.get(self.list_url).data), 2)
+                self.assertEqual(len(self.client.get(self.list_url, {"starred": "0"}).data), 2)
+        self.assertEqual(self.education_state(), before)
+
+    def test_starred_filter_returns_empty_for_guest_and_unstarred_user(self):
+        self.education.starred_by.add(self.owner)
+        before = self.education_state()
+        for user in (None, self.visitor):
+            self.client.force_authenticate(user=user)
+            response = self.client.get(self.list_url, {"starred": "1", "user": self.owner.pk})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data, [])
+            self.assertEqual(self.education_state(), before)
+
+    def test_unstar_removes_item_from_filtered_results(self):
+        self.education.starred_by.add(self.visitor, self.owner)
+        self.client.force_authenticate(user=self.visitor)
+        self.assertEqual(len(self.client.get(self.list_url, {"starred": "1"}).data), 1)
+        self.assertEqual(self.client.post(self.star_url).status_code, 200)
+        self.assertEqual(self.client.get(self.list_url, {"starred": "1"}).data, [])
+        self.assertTrue(self.education.starred_by.filter(pk=self.owner.pk).exists())
+        self.assertEqual(len(self.client.get(self.list_url).data), 1)
+
+    def test_starred_filter_control_requires_login(self):
+        for user in (None, self.visitor, self.editor, self.owner):
+            self.client.logout()
+            if user is not None:
+                self.client.force_login(user)
+            response = self.client.get(reverse("main:show_education"))
+            if user is None:
+                self.assertNotContains(response, 'id="education-starred-filter"')
+            else:
+                self.assertContains(response, 'id="education-starred-filter"')
+                self.assertContains(response, 'for="education-starred-filter"')

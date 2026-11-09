@@ -70,6 +70,11 @@ def education_list(request):
         title = request.query_params.get("title", "").strip()
         if title:
             educations = educations.filter(Q(title__icontains=title) | Q(description__icontains=title))
+        if request.query_params.get("starred") == "1":
+            educations = (
+                educations.filter(starred_by=request.user)
+                if request.user.is_authenticated else educations.none()
+            )
         return Response(EducationSerializer(educations, many=True, context={"request": request}).data)
     serializer = EducationSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
