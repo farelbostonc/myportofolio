@@ -20,7 +20,10 @@
     cursor: wait;
 }
 
-.education-page .button:focus-visible {
+.education-page .button:focus-visible,
+.education-dialog input:focus-visible,
+.education-dialog textarea:focus-visible,
+.education-dialog [data-form-error]:focus {
     outline: 3px solid var(--accent);
     outline-offset: 3px;
 }

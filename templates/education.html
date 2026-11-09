@@ -84,11 +84,12 @@
                                    hidden></p>
                             </div>
                         {% endfor %}
+                        <p class="form-error" data-form-error role="alert" tabindex="-1" hidden></p>
                         <div class="education-dialog-actions">
                             <button type="button" class="button button-secondary" data-close-dialog>
                                 Batal
                             </button>
-                            <button type="submit" class="button">Simpan Pendidikan</button>
+                            <button type="submit" class="button" data-busy-label="Menyimpan...">Simpan Pendidikan</button>
                         </div>
                     </form>
                 </dialog>
@@ -102,11 +103,12 @@
                     <h2 id="education-delete-title">Hapus Pendidikan?</h2>
                     <p>Hapus <strong id="education-delete-name"></strong>?</p>
                     <form id="education-delete-form" method="post">
+                        <p class="form-error" data-form-error role="alert" tabindex="-1" hidden></p>
                         <div class="education-dialog-actions">
                             <button type="button" class="button button-secondary" data-close-dialog>
                                 Batal
                             </button>
-                            <button type="submit" class="button button-danger">Ya, Hapus</button>
+                            <button type="submit" class="button button-danger" data-busy-label="Menghapus...">Ya, Hapus</button>
                         </div>
                     </form>
                 </dialog>

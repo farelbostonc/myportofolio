@@ -30,6 +30,7 @@
     let dataRevision = 0;
     let selectedForDeletion = null;
     let editingId = null;
+    const dialogTriggers = new WeakMap();
 
     function endpoint(pattern, id) {
         return pattern.replace("00000000-0000-0000-0000-000000000000", id);
@@ -199,6 +200,13 @@
 
     function setFormBusy(form, busy) {
         form.dataset.busy = String(busy);
+        form.setAttribute("aria-busy", String(busy));
+        form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(field => {
+            field.readOnly = busy;
+        });
+        const submit = form.querySelector('[type="submit"]');
+        submit.dataset.idleLabel ||= submit.textContent;
+        submit.textContent = busy ? submit.dataset.busyLabel : submit.dataset.idleLabel;
         form.querySelectorAll("button").forEach(button => {
             button.disabled = busy;
         });
@@ -209,7 +217,8 @@
         educationForm.querySelectorAll("[data-error-for]").forEach(node => {
             const name = node.dataset.errorFor;
             const field = educationForm.elements.namedItem(name);
-            const messages = errors[name] || [];
+            const value = errors[name];
+            const messages = Array.isArray(value) ? value : (value ? [String(value)] : []);
             node.textContent = messages.join(" ");
             node.hidden = messages.length === 0;
             field.setAttribute("aria-describedby", node.id);
@@ -221,12 +230,27 @@
             }
         });
         firstInvalidField?.focus();
+        return firstInvalidField;
+    }
+
+    function showFormError(form, message = "") {
+        const error = form.querySelector("[data-form-error]");
+        error.textContent = message;
+        error.hidden = !message;
+        return error;
+    }
+
+    function openDialog(dialog) {
+        dialogTriggers.set(dialog, document.activeElement);
+        dialog.showModal();
     }
 
     function openEducationForm(item = null) {
+        if (educationForm.dataset.busy === "true") return;
         editingId = item?.id ?? null;
         educationForm.reset();
         showFormErrors();
+        showFormError(educationForm);
         document.getElementById("education-add-title").textContent = item
             ? "Edit Pendidikan" : "Tambah Pendidikan";
         if (item) {
@@ -234,7 +258,7 @@
                 educationForm.elements.namedItem(name).value = item[name];
             }
         }
-        addDialog.showModal();
+        openDialog(addDialog);
         educationForm.elements.namedItem("title").focus();
     }
 
@@ -278,7 +302,8 @@
         if (button.dataset.action === "delete" && deleteDialog) {
             selectedForDeletion = item;
             document.getElementById("education-delete-name").textContent = item.title;
-            deleteDialog.showModal();
+            showFormError(deleteForm);
+            openDialog(deleteDialog);
         }
     });
 
@@ -294,9 +319,18 @@
     document.getElementById("education-retry").addEventListener("click", loadEducation);
 
     app.querySelectorAll("[data-close-dialog]").forEach(button => {
-        button.addEventListener("click", () => button.closest("dialog").close());
+        button.addEventListener("click", () => {
+            const dialog = button.closest("dialog");
+            if (dialog.querySelector("form")?.dataset.busy !== "true") dialog.close();
+        });
     });
     app.querySelectorAll("dialog").forEach(dialog => {
+        dialog.addEventListener("close", () => {
+            const trigger = dialogTriggers.get(dialog);
+            if (!trigger) return;
+            dialogTriggers.delete(dialog);
+            (trigger.isConnected ? trigger : searchInput).focus();
+        });
         dialog.addEventListener("cancel", event => {
             if (dialog.querySelector("form")?.dataset.busy === "true") event.preventDefault();
         });
@@ -310,6 +344,7 @@
             event.preventDefault();
             if (educationForm.dataset.busy === "true") return;
             showFormErrors();
+            showFormError(educationForm);
             const formData = new FormData(educationForm);
             const savedId = editingId;
             setFormBusy(educationForm, true);
@@ -322,6 +357,7 @@
                 await writeJson(url, savedId ? "PATCH" : "POST", payload);
                 dataRevision += 1;
                 educationForm.reset();
+                dialogTriggers.delete(addDialog);
                 addDialog.close();
                 showToast("Berhasil", "Pendidikan berhasil disimpan.", "success");
                 await loadEducation();
@@ -330,7 +366,9 @@
                 );
                 (editButton || document.getElementById("open-education-modal") || searchInput).focus();
             } catch (error) {
-                showFormErrors(error.fields || {});
+                const invalidField = showFormErrors(error.fields || {});
+                const summary = showFormError(educationForm, error.message);
+                if (!invalidField) summary.focus();
                 showToast(savedId ? "Gagal mengubah pendidikan" : "Gagal menambah pendidikan", error.message, "error");
             } finally {
                 setFormBusy(educationForm, false);
@@ -343,16 +381,19 @@
             event.preventDefault();
             if (!selectedForDeletion || deleteForm.dataset.busy === "true") return;
             const item = selectedForDeletion;
+            showFormError(deleteForm);
             setFormBusy(deleteForm, true);
             try {
                 await writeJson(endpoint(app.dataset.detailUrl, item.id), "DELETE");
                 dataRevision += 1;
+                dialogTriggers.delete(deleteDialog);
                 deleteDialog.close();
                 selectedForDeletion = null;
                 showToast("Berhasil", "Pendidikan berhasil dihapus.", "success");
                 await loadEducation();
                 searchInput.focus();
             } catch (error) {
+                showFormError(deleteForm, error.message).focus();
                 showToast("Gagal menghapus pendidikan", error.message, "error");
             } finally {
                 setFormBusy(deleteForm, false);

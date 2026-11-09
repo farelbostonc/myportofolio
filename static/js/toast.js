@@ -15,10 +15,10 @@ function showToast(title, message, type = 'normal', duration = 3000) {
     toastTitle.textContent = title;
     toastMessage.textContent = message;
     clearTimeout(toastTimer);
-    if (!toastComponent.matches(':popover-open')) {
-        toastComponent.showPopover();
-        void toastComponent.offsetHeight;
-    }
+    // Buka ulang agar toast berada di atas modal yang baru dibuka.
+    if (toastComponent.matches(':popover-open')) toastComponent.hidePopover();
+    toastComponent.showPopover();
+    void toastComponent.offsetHeight;
     toastComponent.classList.remove('toast-hidden');
     toastComponent.classList.add('toast-show');
     toastTimer = setTimeout(() => {
