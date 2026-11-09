@@ -91,3 +91,31 @@ Saya menggunakan ChatGPT (masih sesi yang sama) https://chatgpt.com/share/6a9ed0
 
 
 
+### Tugas 6
+
+# Implementasi
+Bagian Education menggunakan Django REST Framework untuk menampilkan, mencari, menambah, mengedit, menghapus, dan memberi star tanpa reload halaman.
+
+- Validasi teks memakai `validate_<field>` dan `strip_tags`.
+- Pengunjung dapat membaca data. Pengguna biasa dapat memberi star, Editor dapat mengedit, dan superuser dapat menambah serta menghapus data.
+- Edit dilakukan melalui modal dengan PATCH. Pesan kesalahan tampil lewat toast dan pada form tanpa menghilangkan input.
+- Permintaan yang mengubah data menyertakan token CSRF. Teks ditampilkan menggunakan `textContent`.
+- Fitur tambahan: filter “Yang saya beri star” yang bisa digunakan bersama pencarian.
+
+
+# Jawaban Reflektif
+
+1. REST adalah gaya arsitektur yang mengatur interaksi client dan server melalui resource serta antarmuka yang konsisten. Mengembalikan JSON saja belum cukup karena JSON hanya format data; desain API juga perlu memperhatikan resource, metode HTTP, status respons, dan batasan REST seperti stateless. PUT digunakan untuk mengganti representasi resource secara lengkap, sedangkan PATCH mengubah sebagian field. Contohnya, PATCH cocok untuk mengganti judul Education tanpa mengirim ulang seluruh datanya.
+
+2. Serializer mengubah objek model menjadi data yang dapat dikirim melalui API, sekaligus memvalidasi input sebelum disimpan. Dibandingkan menyusun dictionary dengan JsonResponse, ModelSerializer membantu menjaga konsistensi field, validasi, dan proses create/update. Field hasil perhitungan seperti jumlah star juga bisa dibuat read-only.
+
+3. Autentikasi menentukan siapa pengguna yang mengirim request, sedangkan otorisasi menentukan tindakan yang boleh dilakukan. Menyembunyikan tombol hanya membatasi tampilan; pengguna masih bisa memanggil endpoint secara langsung. Karena itu, permission harus diperiksa di server.
+
+4. SessionAuthentication memakai cookie sesi yang otomatis dikirim browser. Tanpa perlindungan CSRF, situs lain dapat mencoba mengirim permintaan atas nama pengguna yang sedang login. Token CSRF diperlukan untuk melindungi permintaan yang mengubah data. `force_authenticate()` melewati proses autentikasi, sehingga tidak membuktikan perlindungan CSRF bekerja. Pengujiannya memakai `APIClient(enforce_csrf_checks=True)` dan `.login()`, lalu membandingkan permintaan tanpa token dengan permintaan bertoken valid.
+
+# AI Disclosure
+Saya menggunakan asisten AI untuk menelaah ketentuan tugas, menyusun tahapan pengerjaan, membantu implementasi, dan menjalankan pengujian. Bagian yang dibantu mencakup validasi serializer, tes API, modal edit, penanganan error, dan filter star.
+
+Prompt diberikan bertahap berdasarkan PDF tugas dan kode proyek. Ringkasan arahannya: telaah dan rencanakan tanpa mengedit hingga bantu susun implementasi part tertentu.
+
+Hasil AI tetap saya periksa. Saat pengujian saya menemukan selector tes yang ambigu, toast tertutup modal, dan fokus keyboard yang berpindah tidak sesuai. Masalah tersebut saya minta diperbaiki lalu diuji ulang. Tes backend yang lulus saja belum cukup untuk memastikan interaksi halaman berjalan dengan benar.
