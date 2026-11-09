@@ -1071,3 +1071,25 @@ class EducationAPITest(APITestCase):
                     self.assertEqual(response.data["is_starred"], expected_starred)
                     self.assertSetEqual(set(self.education.starred_by.values_list("pk", flat=True)),
                                         {self.owner.pk, self.visitor.pk})
+
+    def test_education_page_exposes_edit_form_only_to_editor_and_owner(self):
+        for user in (None, self.visitor, self.staff, self.editor, self.owner):
+            with self.subTest(user=user):
+                self.client.logout()
+                if user is not None:
+                    self.client.force_login(user)
+                response = self.client.get(reverse("main:show_education"))
+                self.assertEqual(response.status_code, 200)
+                can_edit = user in (self.editor, self.owner)
+                self.assertContains(response, f'data-can-edit="{str(can_edit).lower()}"')
+                if can_edit:
+                    self.assertContains(response, 'id="education-form"')
+                    for field in self.payload:
+                        self.assertContains(response, f'name="{field}"')
+                else:
+                    self.assertNotContains(response, 'id="education-form"')
+                for control in ('id="open-education-modal"', 'id="education-delete-dialog"'):
+                    if user == self.owner:
+                        self.assertContains(response, control)
+                    else:
+                        self.assertNotContains(response, control)

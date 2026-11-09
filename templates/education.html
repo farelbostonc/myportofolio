@@ -18,6 +18,7 @@
              data-star-url="{% url 'api:education-star' '00000000-0000-0000-0000-000000000000' %}"
              data-login-url="{% url 'main:login' %}"
              data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}"
+             data-can-edit="{{ can_edit|yesno:'true,false' }}"
              data-owner="{{ user.is_superuser|yesno:'true,false' }}"
              aria-busy="true">
             <div hidden>{% csrf_token %}</div>
@@ -63,7 +64,7 @@
 
             <noscript>Aktifkan JavaScript untuk menampilkan daftar pendidikan.</noscript>
 
-            {% if user.is_superuser %}
+            {% if can_edit %}
                 <dialog id="education-add-dialog"
                         class="education-dialog"
                         aria-labelledby="education-add-title">
@@ -92,6 +93,9 @@
                     </form>
                 </dialog>
 
+            {% endif %}
+
+            {% if user.is_superuser %}
                 <dialog id="education-delete-dialog"
                         class="education-dialog"
                         aria-labelledby="education-delete-title">

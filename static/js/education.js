@@ -5,6 +5,7 @@
     if (!app) return;
 
     const isAuthenticated = app.dataset.authenticated === "true";
+    const canEdit = app.dataset.canEdit === "true";
     const isOwner = app.dataset.owner === "true";
     const csrfToken = app.querySelector('[name="csrfmiddlewaretoken"]').value;
     const searchForm = document.getElementById("education-search-form");
@@ -28,6 +29,7 @@
     let listController;
     let dataRevision = 0;
     let selectedForDeletion = null;
+    let editingId = null;
 
     function endpoint(pattern, id) {
         return pattern.replace("00000000-0000-0000-0000-000000000000", id);
@@ -133,6 +135,15 @@
             actions.append(link);
         }
 
+        if (canEdit) {
+            const button = makeElement("button", "button button-secondary", "Edit");
+            button.type = "button";
+            button.dataset.action = "edit";
+            button.dataset.id = item.id;
+            button.setAttribute("aria-label", `Edit ${fields.title}`);
+            actions.append(button);
+        }
+
         if (isOwner) {
             const button = makeElement("button", "button button-danger", "Hapus");
             button.type = "button";
@@ -212,6 +223,21 @@
         firstInvalidField?.focus();
     }
 
+    function openEducationForm(item = null) {
+        editingId = item?.id ?? null;
+        educationForm.reset();
+        showFormErrors();
+        document.getElementById("education-add-title").textContent = item
+            ? "Edit Pendidikan" : "Tambah Pendidikan";
+        if (item) {
+            for (const name of ["title", "description", "start_year", "end_year"]) {
+                educationForm.elements.namedItem(name).value = item[name];
+            }
+        }
+        addDialog.showModal();
+        educationForm.elements.namedItem("title").focus();
+    }
+
     function findStarButton(id) {
         return grid.querySelector(`[data-action="star"][data-id="${id}"]`);
     }
@@ -246,6 +272,9 @@
         const item = items.get(button.dataset.id);
         if (!item) return;
         if (button.dataset.action === "star") toggleStar(item, button);
+        if (button.dataset.action === "edit" && canEdit && educationForm && addDialog) {
+            openEducationForm(item);
+        }
         if (button.dataset.action === "delete" && deleteDialog) {
             selectedForDeletion = item;
             document.getElementById("education-delete-name").textContent = item.title;
@@ -274,29 +303,35 @@
     });
 
     if (educationForm && addDialog) {
-        document.getElementById("open-education-modal").addEventListener("click", () => {
-            showFormErrors();
-            addDialog.showModal();
+        document.getElementById("open-education-modal")?.addEventListener("click", () => {
+            openEducationForm();
         });
         educationForm.addEventListener("submit", async event => {
             event.preventDefault();
             if (educationForm.dataset.busy === "true") return;
             showFormErrors();
             const formData = new FormData(educationForm);
+            const savedId = editingId;
             setFormBusy(educationForm, true);
             try {
                 const payload = Object.fromEntries(
                     ["title", "description", "start_year", "end_year"].map(name => [name, formData.get(name)])
                 );
-                await writeJson(app.dataset.createUrl, "POST", payload);
+                const url = savedId
+                    ? endpoint(app.dataset.detailUrl, savedId) : app.dataset.createUrl;
+                await writeJson(url, savedId ? "PATCH" : "POST", payload);
                 dataRevision += 1;
                 educationForm.reset();
                 addDialog.close();
                 showToast("Berhasil", "Pendidikan berhasil disimpan.", "success");
                 await loadEducation();
+                const editButton = savedId && grid.querySelector(
+                    `[data-action="edit"][data-id="${savedId}"]`
+                );
+                (editButton || document.getElementById("open-education-modal") || searchInput).focus();
             } catch (error) {
                 showFormErrors(error.fields || {});
-                showToast("Gagal menambah pendidikan", error.message, "error");
+                showToast(savedId ? "Gagal mengubah pendidikan" : "Gagal menambah pendidikan", error.message, "error");
             } finally {
                 setFormBusy(educationForm, false);
             }

@@ -84,7 +84,11 @@ def delete_experience(request, experience_id):
 
 
 def show_education(request):
+    can_edit = request.user.is_authenticated and (
+        request.user.is_superuser or request.user.groups.filter(name="Editor").exists()
+    )
     context = {
+        "can_edit": can_edit,
         "name": "Farel Boston Corinthians Nadeak",
         "title_query": request.GET.get("title", "").strip(),
         "form": EducationForm(),
